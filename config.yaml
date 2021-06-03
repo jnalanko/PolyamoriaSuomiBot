@@ -1,0 +1,7 @@
+token: Get this from https://discord.com/developers/applications 
+callback_interval_minutes: 1
+delete_older_than_minutes: 5
+active_channels:
+        - channel1
+        - channel2
+        - channel3

@@ -53,6 +53,9 @@ class MyBot:
         self.remove_all_jobs()
         self.add_all_jobs()
 
+        # Write updated config to disk
+        self.save_config()
+
     def startup(self):
         print("Adding all jobs and starting the scheduler.")
         self.add_all_jobs()
@@ -74,6 +77,11 @@ class MyBot:
         for job in self.autodel_config:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
+
+    def save_config(self):
+        config = {"token": self.token, "autodelete_channels": self.autodel_config}
+        with open('config_local.yaml', 'w') as outfile:
+            yaml.dump(config, outfile, default_flow_style=False)
 
 # todo: tallenna asetukset
 
@@ -109,7 +117,7 @@ async def on_message(message):
         lines.append("Komento **!ohjeet** tulostaa tämän käyttöohjeen. Komento **!asetukset** näyttää nykyiset asetukset. Muita komentoja ovat:")
         lines.append("")
         lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
-        lines.append("**!autodelete** lopeta [kanavan nimi]")
+        lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
         lines.append("")
         lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
         await message.channel.send("\n".join(lines))
@@ -136,7 +144,7 @@ async def on_message(message):
             return
 
         # Run the command
-        mybot.set_autodel(channel_name, interval_hours, time_horizon_days) # todo: it says it's hours and minutes but for debug it's actually minutes and minutes
+        mybot.set_autodel(channel_name, interval_hours*60, time_horizon_days*60*24)
 
         # Print the new settings
         await message.channel.send(mybot.get_settings_string())

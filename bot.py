@@ -55,6 +55,6 @@ async def on_ready():
     for channel in client.get_all_channels():
         for job in autodel_config:
             if channel.name == job["channel"]:
-                await channel.send("Botti käynnistyy. Poistan tältä kanavalta {} minuutin välein vähintään {} minuuttia vanhat viestit.", job["callback_interval_minutes"], job["delete_older_than_minutes"])
+                await channel.send("Botti käynnistyy. Poistan tältä kanavalta {} minuutin välein vähintään {} minuuttia vanhat viestit.".format(job["callback_interval_minutes"], job["delete_older_than_minutes"]))
 
 client.run(token)

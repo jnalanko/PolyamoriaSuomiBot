@@ -24,7 +24,7 @@ this.running = False
 sched = AsyncIOScheduler()
 
 print("Loading config")
-config = yaml.safe_load(open("config.yaml"))
+config = yaml.safe_load(open("config_local.yaml"))
 token = config["token"]
 callback_interval = config["callback_interval_minutes"]
 delete_older_than_minutes = config["delete_older_than_minutes"]
@@ -50,5 +50,8 @@ async def on_ready():
     sched.add_job(autodelete.run, 'interval', (client, delete_older_than_minutes, active_channel_names), minutes=callback_interval)
     sched.start()
     print(f"Setup finished. Running.", flush=True)
+    for channel in client.get_all_channels():
+        if channel.name in active_channel_names:
+            await channel.send("Botti käynnistyy.")
 
 client.run(token)

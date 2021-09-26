@@ -8,14 +8,23 @@ from multiprocessing                import Process
 from datetime import datetime, timedelta
 
 class AutoDeleteCallBack:
-    async def run(self, client, delete_older_than_minutes, channel_name):
+    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name):
+        # Find the log channel
+        log_channel = None
+        for channel in client.get_all_channels():
+            if channel.name == log_channel_name:
+                log_channel = channel
+
+        # Run autodelete
         for channel in client.get_all_channels():
             if channel.name == channel_name:
                 prev_time = datetime.utcnow() - timedelta(minutes=delete_older_than_minutes)
+                n_deleted = 0
                 async for elem in channel.history(before = prev_time):
                     print("Deleting message: " + str(elem))
                     await elem.delete()
-
+                    n_deleted += 1
+                await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
 class MyBot:
 
@@ -27,6 +36,7 @@ class MyBot:
         self.autodel_config = config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z]
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
+        self.log_channel_name = "bottikomennot"
         
     def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
         # Check if autodelete is already active for the channel and if so, update the values
@@ -52,10 +62,11 @@ class MyBot:
         print("Removing all jobs")
         self.sched.remove_all_jobs()
 
-    def add_all_jobs(self):
+    def add_all_jobs(self): # todo: restart only the jobs that are affected? Or run first jobs immediately after starting, not after the first interval
         print("Adding all jobs")
-        for job in self.autodel_config:
-            self.sched.add_job(self.autodelete.run, 'interval', (client, job["delete_older_than_minutes"], job["channel"]), minutes=job["callback_interval_minutes"])
+        for X in self.autodel_config:
+            job = self.sched.add_job(self.autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"], self.log_channel_name), minutes=X["callback_interval_minutes"])
+            job.modify(next_run_time=datetime.now()) # Schedule the first run to be done immediately
 
     def get_settings_string(self):
         lines = []
@@ -63,6 +74,8 @@ class MyBot:
         for job in self.autodel_config:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
+
+# todo: tallenna asetukset
 
 # Set to remember if the bot is already running, since on_ready may be called
 # more than once on reconnects

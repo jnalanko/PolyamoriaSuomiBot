@@ -30,7 +30,8 @@ token = config["token"]
 autodel_config = config["autodelete_channels"] # Dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z]
 #print(X["channel"], X["callback_interval_minutes"], X["delete_older_than_minutes"])
 
-print("Deleting every {} minutes all messages older than {} minutes from these channels: {}".format(callback_interval, delete_older_than_minutes, str(active_channel_names)))
+print("Config:" + str(config))
+#print("Deleting every {} minutes all messages older than {} minutes from these channels: {}".format(callback_interval, delete_older_than_minutes, str(active_channel_names)))
 
 autodelete = AutoDeleteCallBack()
 
@@ -48,7 +49,7 @@ async def on_ready():
 
     print("Logged in. Setting up callbacks.", flush=True)
     for job in autodel_config:
-        sched.add_job(autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"], minutes=X["callback_interval_minutes"])
+        sched.add_job(autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"]), minutes=X["callback_interval_minutes"])
     sched.start()
     print(f"Setup finished. Running.", flush=True)
     for channel in client.get_all_channels():

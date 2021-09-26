@@ -8,15 +8,16 @@ from multiprocessing                import Process
 from datetime import datetime, timedelta
 
 class AutoDeleteCallBack:
-    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name):
+    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id):
         # Find the log channel
         log_channel = None
-        for channel in client.get_all_channels():
+        guild = client.get_guild(guild_id)
+        for channel in guild.channels:
             if channel.name == log_channel_name:
-                log_channel = channel
+                log_channel = channel # todo: what if not found?
 
         # Run autodelete
-        for channel in client.get_all_channels():
+        for channel in guild.channels:
             if channel.name == channel_name:
                 prev_time = datetime.utcnow() - timedelta(minutes=delete_older_than_minutes)
                 n_deleted = 0
@@ -24,37 +25,38 @@ class AutoDeleteCallBack:
                     print("Deleting message: " + str(elem))
                     await elem.delete()
                     n_deleted += 1
-                await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+                await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
+# An object of this class manages the bot for *one* server.
 class MyBot:
 
-    def __init__(self, yaml_filename):
-        print("Loading config from " + yaml_filename)
-        config = yaml.safe_load(open(yaml_filename))
-        print("Config:", config)
-        self.token = token = config["token"]
-        self.autodel_config = config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z]
+    def __init__(self, instance_config, guild_id):
+        print("Instance config:", instance_config)
+        self.guild_id = guild_id
+        self.autodel_config = instance_config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z]
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
-        self.log_channel_name = "bottikomennot"
+        self.log_channel_name = "bottikomennot" # todo: configiin?
         
-    def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
+    def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
         # Check if autodelete is already active for the channel and if so, update the values
-        for X in self.autodel_config:
-            if X["channel"] == channel_name:
-                X["callback_interval_minutes"] = callback_interval_minutes
-                X["delete_older_than_minutes"] = delete_older_than_minutes
-                return
+        existing = False
+        for i in range(len(self.autodel_config)):
+            if self.autodel_config[i]["channel"] == channel_name:
+                self.autodel_config[i]["callback_interval_minutes"] = callback_interval_minutes
+                self.autodel_config[i]["delete_older_than_minutes"] = delete_older_than_minutes
+                existing = True
 
         # Autodelete is not yet active for this channel
-        self.autodel_config.append({"channel": channel_name, "callback_interval_minutes": callback_interval_minutes, "delete_older_than_minutes": delete_older_than_minutes})
+        if not existing:
+            self.autodel_config.append({"channel": channel_name, "callback_interval_minutes": callback_interval_minutes, "delete_older_than_minutes": delete_older_than_minutes}) # todo: guild here
 
         # Reboot jobs
         self.remove_all_jobs()
         self.add_all_jobs()
 
-        # Write updated config to disk
-        self.save_config()
+        print("Autodel config is now:", self.autodel_config)
+        return self.autodel_config
 
     def startup(self):
         print("Adding all jobs and starting the scheduler.")
@@ -65,10 +67,10 @@ class MyBot:
         print("Removing all jobs")
         self.sched.remove_all_jobs()
 
-    def add_all_jobs(self): # todo: restart only the jobs that are affected? Or run first jobs immediately after starting, not after the first interval
+    def add_all_jobs(self):
         print("Adding all jobs")
         for X in self.autodel_config:
-            job = self.sched.add_job(self.autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"], self.log_channel_name), minutes=X["callback_interval_minutes"])
+            job = self.sched.add_job(self.autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"], self.log_channel_name, self.guild_id), minutes=X["callback_interval_minutes"])
             job.modify(next_run_time=datetime.now()) # Schedule the first run to be done immediately
 
     def get_settings_string(self):
@@ -78,19 +80,25 @@ class MyBot:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
 
-    def save_config(self):
-        config = {"token": self.token, "autodelete_channels": self.autodel_config}
-        with open('config_local.yaml', 'w') as outfile:
-            yaml.dump(config, outfile, default_flow_style=False)
+    #def save_config(self):
+    #    config = {"token": self.token, "autodelete_channels": self.autodel_config}
+    #    filename = "config_local.yaml"
+    #    with open(filename, 'w') as outfile:
+    #        yaml.dump(config, outfile, default_flow_style=False)
+    #    print("Update config file", filename)
 
-# todo: tallenna asetukset
+# Todo: Use channel objects instead of channel names
 
 # Set to remember if the bot is already running, since on_ready may be called
 # more than once on reconnects
 this = sys.modules[__name__]
 this.running = False
 
-mybot = MyBot("config_local.yaml")
+yaml_filename = "config_local.yaml"
+global_config = yaml.safe_load(open(yaml_filename))
+print("Global config:", global_config)
+
+instances = dict() # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
@@ -104,12 +112,23 @@ async def on_ready():
     if this.running: return
     else: this.running = True
 
-    mybot.startup()
+    
     print("Bot started up.", flush=True)
+    async for guild in client.fetch_guilds(limit=150):
+        print("guild", guild.name, guild.id)
+
+        if guild.id not in global_config["instances"]:
+            global_config["instances"][guild.id] = {"autodelete_channels": []} # Init empty config for this guild
+
+        instance = MyBot(global_config["instances"][guild.id], guild.id) # todo: this is a bit silly
+        instance.startup()
+        instances[guild.id] = instance
+    print(instances)
 
 @client.event
 async def on_message(message):
     print("onmessage", message.content)
+    mybot = instances[message.guild.id]
     if message.content.startswith("!ohjeet") and message.channel.name == "bottikomennot": # todo: check server also. Otherwise possiblity of cross-server commands.
         lines = []
         lines.append("**PolyamoriaSuomiBot**")
@@ -139,14 +158,19 @@ async def on_message(message):
             return
 
         # Check that the channel exists
-        if not (channel_name in [C.name for C in client.get_all_channels()]):
+        if not (channel_name in [C.name for C in message.guild.channels]):
             await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
             return
 
         # Run the command
-        mybot.set_autodel(channel_name, interval_hours*60, time_horizon_days*60*24)
+        global_config["instances"][message.guild.id]["autodelete_channels"] = mybot.set_autodel(channel_name, interval_hours*60, time_horizon_days*60*24)
 
-        # Print the new settings
+        # Print the new settings to channel
         await message.channel.send(mybot.get_settings_string())
 
-client.run(mybot.token)
+        # Update config file
+        with open(yaml_filename, 'w') as outfile:
+          yaml.dump(global_config, outfile, default_flow_style=False)
+        print("Updated config file", yaml_filename)
+
+client.run(global_config["token"])

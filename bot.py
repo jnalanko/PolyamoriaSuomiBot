@@ -49,7 +49,7 @@ async def on_ready():
 
     print("Logged in. Setting up callbacks.", flush=True)
     for job in autodel_config:
-        sched.add_job(autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"]), minutes=X["callback_interval_minutes"])
+        sched.add_job(autodelete.run, 'interval', (client, job["delete_older_than_minutes"], job["channel"]), minutes=job["callback_interval_minutes"])
     sched.start()
     print(f"Setup finished. Running.", flush=True)
     for channel in client.get_all_channels():

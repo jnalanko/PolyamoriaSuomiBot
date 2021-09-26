@@ -53,7 +53,8 @@ async def on_ready():
     sched.start()
     print(f"Setup finished. Running.", flush=True)
     for channel in client.get_all_channels():
-        if channel.name in active_channel_names:
-            await channel.send("Botti käynnistyy.")
+        for job in autodel_config:
+            if channel.name == job["channel"]:
+                await channel.send("Botti käynnistyy. Poistan tältä kanavalta {} minuutin välein vähintään {} minuuttia vanhat viestit.", job["callback_interval_minutes"], job["delete_older_than_minutes"])
 
 client.run(token)

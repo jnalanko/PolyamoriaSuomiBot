@@ -214,7 +214,7 @@ async def on_message(message):
             # Print the new settings to channel
             await message.channel.send("Poistan kanavalta {} yli {} päivää vanhat viestit {} tunnin välein".format(channel_name, time_horizon_days, interval_hours))
         else:
-            await message.channel.send("Tuntematon komento: " + message.content.split[0])
+            await message.channel.send("Tuntematon komento: " + message.content.split()[0])
         # Update config file
         with open(yaml_filename, 'w') as outfile:
             yaml.dump(global_config, outfile, default_flow_style=False)

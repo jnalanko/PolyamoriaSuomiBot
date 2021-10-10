@@ -1,7 +1,18 @@
-token: Get this from https://discord.com/developers/applications 
-callback_interval_minutes: 1
-delete_older_than_minutes: 5
-active_channels:
-        - channel1
-        - channel2
-        - channel3
+instances:
+  guild1_id_without_quotes:
+    autodelete_channels:
+    - channel: channel1_name
+      callback_interval_minutes: 60
+      delete_older_than_minutes: 1440
+    - channel: channel2_name
+      callback_interval_minutes: 60
+      delete_older_than_minutes: 1440
+  guild2_id_without_quotes:
+    autodelete_channels:
+    - channel: channel1_name
+      callback_interval_minutes: 60
+      delete_older_than_minutes: 1440
+    - channel: channel2_name
+      callback_interval_minutes: 60
+      delete_older_than_minutes: 1440
+token: get this from discord developer website

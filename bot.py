@@ -21,7 +21,7 @@ class AutoDeleteCallBack:
             if channel.name == channel_name:
                 prev_time = datetime.utcnow() - timedelta(minutes=delete_older_than_minutes)
                 n_deleted = 0
-                async for elem in channel.history(before = prev_time):
+                async for elem in channel.history(before = prev_time, oldest_first = True, limit = None):
                     print("Deleting message: " + str(elem))
                     await elem.delete()
                     n_deleted += 1

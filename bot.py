@@ -39,6 +39,7 @@ class MyBot:
         self.jobs = dict() # channel name -> job
         self.log_channel_name = "bottikomennot" # todo: configiin?
         
+    # Updates config and the affected job. If no job is yet active, creates a new job
     def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
         # Check if autodelete is already active for the channel and if so, update config the values
         existing = False
@@ -57,6 +58,15 @@ class MyBot:
 
         print("Autodel config is now:", self.autodel_config)
         return self.autodel_config
+
+    # Updates config and removes the affected job (if exists)
+    def remove_autodel_from_channel(self, channel_name):
+        for i in range(len(self.autodel_config)):
+            if self.autodel_config[i]["channel"] == channel_name:
+                del self.autodel_config[i]
+        if channel_name in self.jobs: 
+            self.jobs["channel_name"].remove()
+            del self.jobs["channel_name"]
 
     def create_job(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
         if channel_name in self.jobs:
@@ -143,7 +153,7 @@ async def on_message(message):
         lines.append("Komento **!ohjeet** tulostaa tämän käyttöohjeen. Komento **!asetukset** näyttää nykyiset asetukset. Muita komentoja ovat:")
         lines.append("")
         lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
-        lines.append("**!autodelete** aja-nyt") # todo
+        lines.append("**!autodelete** aja-nyt")
         lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
         lines.append("")
         lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
@@ -152,6 +162,23 @@ async def on_message(message):
         await message.channel.send(mybot.get_settings_string())
     if message.content.startswith("!autodelete aja-nyt") and message.channel.name == "bottikomennot":
         mybot.trigger_all_jobs_now()
+    if message.content.startswith("!autodelete lopeta") and message.channel.name == "bottikomennot":
+        tokens = message.content.split()
+        
+        # Check the number of parameters
+        if len(tokens) != 3:
+            await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete lopeta` täytyy antaa yksi parametri.")
+            return
+
+        # Check that the channel exists
+        channel_name = tokens[2]
+        if not (channel_name in [C.name for C in message.guild.channels]):
+            await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
+            return
+
+         # Run the command
+        mybot.remove_autodel_from_channel(channel_name)
+
     if message.content.startswith("!autodelete aseta") and message.channel.name == "bottikomennot":
         tokens = message.content.split()
 

@@ -61,13 +61,16 @@ class MyBot:
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_name):
+        print("debug", self.jobs)
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
                 del self.autodel_config[i]
         if channel_name in self.jobs: 
-            self.jobs["channel_name"].remove()
-            del self.jobs["channel_name"]
+            self.jobs[channel_name].remove()
+            del self.jobs[channel_name]
+        return self.autodel_config
 
+    # Does not update config
     def create_job(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
         if channel_name in self.jobs:
             self.jobs[channel_name].remove() # Terminate existing job
@@ -82,7 +85,9 @@ class MyBot:
     def add_all_jobs(self):
         print("Adding all jobs")
         for X in self.autodel_config:
-            self.create_job(X["channel"], X["delete_older_than_minutes"], X["callback_interval_minutes"])
+            print("Adding " + str(X))
+            self.create_job(X["channel"], X["callback_interval_minutes"], X["delete_older_than_minutes"])
+        print(self.jobs)
 
     def trigger_all_jobs_now(self):
         print("Triggering all jobs")
@@ -96,13 +101,6 @@ class MyBot:
         for job in self.autodel_config:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
-
-    #def save_config(self):
-    #    config = {"token": self.token, "autodelete_channels": self.autodel_config}
-    #    filename = "config_local.yaml"
-    #    with open(filename, 'w') as outfile:
-    #        yaml.dump(config, outfile, default_flow_style=False)
-    #    print("Update config file", filename)
 
 # Todo: Use channel objects instead of channel names
 
@@ -146,70 +144,80 @@ async def on_ready():
 async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
-    if message.content.startswith("!ohjeet") and message.channel.name == "bottikomennot": # todo: check server also. Otherwise possiblity of cross-server commands.
-        lines = []
-        lines.append("**PolyamoriaSuomiBot**")
-        lines.append("")
-        lines.append("Komento **!ohjeet** tulostaa tämän käyttöohjeen. Komento **!asetukset** näyttää nykyiset asetukset. Muita komentoja ovat:")
-        lines.append("")
-        lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
-        lines.append("**!autodelete** aja-nyt")
-        lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
-        lines.append("")
-        lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
-        await message.channel.send("\n".join(lines))
-    if message.content.startswith("!asetukset") and message.channel.name == "bottikomennot":
-        await message.channel.send(mybot.get_settings_string())
-    if message.content.startswith("!autodelete aja-nyt") and message.channel.name == "bottikomennot":
-        mybot.trigger_all_jobs_now()
-    if message.content.startswith("!autodelete lopeta") and message.channel.name == "bottikomennot":
-        tokens = message.content.split()
-        
-        # Check the number of parameters
-        if len(tokens) != 3:
-            await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete lopeta` täytyy antaa yksi parametri.")
-            return
+    if message.content.startswith("!") and message.channel.name == "bottikomennot":
+        if message.content.startswith("!ohjeet"): # todo: check server also. Otherwise possiblity of cross-server commands.
+            lines = []
+            lines.append("**PolyamoriaSuomiBot**")
+            lines.append("")
+            lines.append("Komento **!ohjeet** tulostaa tämän käyttöohjeen. Komento **!asetukset** näyttää nykyiset asetukset. Muita komentoja ovat:")
+            lines.append("")
+            lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
+            lines.append("**!autodelete** aja-nyt")
+            lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
+            lines.append("")
+            lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
+            await message.channel.send("\n".join(lines))
+        elif message.content.startswith("!asetukset"):
+            await message.channel.send(mybot.get_settings_string())
+        elif message.content.startswith("!autodelete aja-nyt"):
+            await message.channel.send("Ok, ajetaan kaikki autodeletoinnit nyt.")
+            mybot.trigger_all_jobs_now()
+        elif message.content.startswith("!autodelete lopeta"):
+            tokens = message.content.split()
+            
+            # Check the number of parameters
+            if len(tokens) != 3:
+                await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete lopeta` täytyy antaa yksi parametri.")
+                return
 
-        # Check that the channel exists
-        channel_name = tokens[2]
-        if not (channel_name in [C.name for C in message.guild.channels]):
-            await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
-            return
+            # Check that the channel exists
+            channel_name = tokens[2]
+            if not (channel_name in [C.name for C in message.guild.channels]):
+                await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
+                return
 
-         # Run the command
-        mybot.remove_autodel_from_channel(channel_name)
+            # Run the command
+            global_config["instances"][message.guild.id]["autodelete_channels"] = mybot.remove_autodel_from_channel(channel_name)
+            await message.channel.send("Autodelete lopetettu kanavalta " + channel_name)
 
-    if message.content.startswith("!autodelete aseta") and message.channel.name == "bottikomennot":
-        tokens = message.content.split()
+            # Update config file
+            with open(yaml_filename, 'w') as outfile:
+                yaml.dump(global_config, outfile, default_flow_style=False)
+            print("Updated config file", yaml_filename)
 
-        # Check the number of parameters
-        if len(tokens) != 5:
-            await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete aseta` täytyy antaa kolme parametria.")
-            return
+        elif message.content.startswith("!autodelete aseta"):
+            tokens = message.content.split()
 
-        # Check the parameter types
-        try:
-            channel_name, time_horizon_days, interval_hours = tokens[2], int(tokens[3]), int(tokens[4])
-            if time_horizon_days < 1 or interval_hours < 1:
-                raise ValueError("Time parameter not positive")
-        except ValueError:
-            await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavan nimi ja kaksi positiivista kokonaislukua.")
-            return
+            # Check the number of parameters
+            if len(tokens) != 5:
+                await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete aseta` täytyy antaa kolme parametria.")
+                return
 
-        # Check that the channel exists
-        if not (channel_name in [C.name for C in message.guild.channels]):
-            await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
-            return
+            # Check the parameter types
+            try:
+                channel_name, time_horizon_days, interval_hours = tokens[2], int(tokens[3]), int(tokens[4])
+                if time_horizon_days < 1 or interval_hours < 1:
+                    raise ValueError("Time parameter not positive")
+            except ValueError:
+                await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavan nimi ja kaksi positiivista kokonaislukua.")
+                return
 
-        # Run the command
-        global_config["instances"][message.guild.id]["autodelete_channels"] = mybot.set_autodel(channel_name, interval_hours*60, time_horizon_days*60*24)
+            # Check that the channel exists
+            if not (channel_name in [C.name for C in message.guild.channels]):
+                await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
+                return
 
-        # Print the new settings to channel
-        await message.channel.send(mybot.get_settings_string())
+            # Run the command
+            global_config["instances"][message.guild.id]["autodelete_channels"] = mybot.set_autodel(channel_name, interval_hours*60, time_horizon_days*60*24)
 
+            # Print the new settings to channel
+            await message.channel.send("Poistan kanavalta {} yli {} päivää vanhat viestit {} tunnin välein".format(channel_name, time_horizon_days, interval_hours))
+        else:
+            await message.channel.send("Tuntematon komento: " + message.content)
         # Update config file
         with open(yaml_filename, 'w') as outfile:
-          yaml.dump(global_config, outfile, default_flow_style=False)
+            yaml.dump(global_config, outfile, default_flow_style=False)
         print("Updated config file", yaml_filename)
+
 
 client.run(global_config["token"])

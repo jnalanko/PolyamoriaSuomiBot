@@ -146,7 +146,7 @@ async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
     if message.content.startswith("!") and message.channel.name == "bottikomennot":
-        if message.content.startswith("!ohjeet"): # todo: check server also. Otherwise possiblity of cross-server commands.
+        if message.content.startswith("!ohjeet"):
             lines = []
             lines.append("**PolyamoriaSuomiBot**")
             lines.append("")
@@ -154,7 +154,7 @@ async def on_message(message):
             lines.append("")
             lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
             lines.append("**!autodelete** aja-nyt")
-            lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
+            lines.append("**!autodelete** lopeta [kanavan nimi]")
             lines.append("")
             lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
             await message.channel.send("\n".join(lines))

@@ -153,8 +153,10 @@ async def on_message(message):
         # Check the parameter types
         try:
             channel_name, time_horizon_days, interval_hours = tokens[2], int(tokens[3]), int(tokens[4])
+            if time_horizon_days < 1 or interval_hours < 1:
+                raise ValueError("Time parameter not positive")
         except ValueError:
-            await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavan nimi ja kaksi kokonaislukua.")
+            await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavan nimi ja kaksi positiivista kokonaislukua.")
             return
 
         # Check that the channel exists

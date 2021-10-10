@@ -33,13 +33,14 @@ class MyBot:
     def __init__(self, instance_config, guild_id):
         print("Instance config:", instance_config)
         self.guild_id = guild_id
-        self.autodel_config = instance_config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z]
+        self.autodel_config = instance_config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z] (todo: make channel a key)
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
+        self.jobs = dict() # channel name -> job
         self.log_channel_name = "bottikomennot" # todo: configiin?
         
     def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
-        # Check if autodelete is already active for the channel and if so, update the values
+        # Check if autodelete is already active for the channel and if so, update config the values
         existing = False
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
@@ -49,29 +50,35 @@ class MyBot:
 
         # Autodelete is not yet active for this channel
         if not existing:
-            self.autodel_config.append({"channel": channel_name, "callback_interval_minutes": callback_interval_minutes, "delete_older_than_minutes": delete_older_than_minutes}) # todo: guild here
+            # Add new entry to the config
+            self.autodel_config.append({"channel": channel_name, "callback_interval_minutes": callback_interval_minutes, "delete_older_than_minutes": delete_older_than_minutes})
 
-        # Reboot jobs
-        self.remove_all_jobs()
-        self.add_all_jobs()
+        self.create_job(channel_name, callback_interval_minutes, delete_older_than_minutes) # Create new job
 
         print("Autodel config is now:", self.autodel_config)
         return self.autodel_config
+
+    def create_job(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
+        if channel_name in self.jobs:
+            self.jobs[channel_name].remove() # Terminate existing job
+
+        self.jobs[channel_name] = self.sched.add_job(self.autodelete.run, 'interval', (client, delete_older_than_minutes, channel_name, self.log_channel_name, self.guild_id), minutes=callback_interval_minutes)
 
     def startup(self):
         print("Adding all jobs and starting the scheduler.")
         self.add_all_jobs()
         self.sched.start()
 
-    def remove_all_jobs(self):
-        print("Removing all jobs")
-        self.sched.remove_all_jobs()
-
     def add_all_jobs(self):
         print("Adding all jobs")
         for X in self.autodel_config:
-            job = self.sched.add_job(self.autodelete.run, 'interval', (client, X["delete_older_than_minutes"], X["channel"], self.log_channel_name, self.guild_id), minutes=X["callback_interval_minutes"])
-            job.modify(next_run_time=datetime.now()) # Schedule the first run to be done immediately
+            self.create_job(X["channel"], X["delete_older_than_minutes"], X["callback_interval_minutes"])
+
+    def trigger_all_jobs_now(self):
+        print("Triggering all jobs")
+        for channel_name in self.jobs:
+            print("Trigger", channel_name)
+            self.jobs[channel_name].modify(next_run_time=datetime.now())
 
     def get_settings_string(self):
         lines = []
@@ -136,12 +143,15 @@ async def on_message(message):
         lines.append("Komento **!ohjeet** tulostaa tämän käyttöohjeen. Komento **!asetukset** näyttää nykyiset asetukset. Muita komentoja ovat:")
         lines.append("")
         lines.append("**!autodelete** aseta [kanavan nimi ilman risuaitaa] [aikahorisontti päivinä] [kuinka monen tunnin välein poistot tehdään]")
+        lines.append("**!autodelete** aja-nyt") # todo
         lines.append("**!autodelete** lopeta [kanavan nimi]") # todo
         lines.append("")
         lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
         await message.channel.send("\n".join(lines))
     if message.content.startswith("!asetukset") and message.channel.name == "bottikomennot":
         await message.channel.send(mybot.get_settings_string())
+    if message.content.startswith("!autodelete aja-nyt") and message.channel.name == "bottikomennot":
+        mybot.trigger_all_jobs_now()
     if message.content.startswith("!autodelete aseta") and message.channel.name == "bottikomennot":
         tokens = message.content.split()
 

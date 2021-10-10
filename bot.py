@@ -65,6 +65,7 @@ class MyBot:
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
                 del self.autodel_config[i]
+                break
         if channel_name in self.jobs: 
             self.jobs[channel_name].remove()
             del self.jobs[channel_name]

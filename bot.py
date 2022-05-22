@@ -22,8 +22,9 @@ class AutoDeleteCallBack:
                 prev_time = datetime.utcnow() - timedelta(minutes=delete_older_than_minutes)
                 n_deleted = 0
                 async for elem in channel.history(before = prev_time, oldest_first = True, limit = None):
-                    print("Deleting message: " + str(elem))
-                    await elem.delete()
+                    if elem.pinned == False: # Skip pinned messages
+                        print("Deleting message: " + str(elem))
+                        await elem.delete()
                     n_deleted += 1
                 await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 

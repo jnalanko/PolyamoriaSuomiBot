@@ -54,8 +54,8 @@ class AutoDeleteCallBack:
                 async for T in channel.archived_threads(limit=None):
                     all_threads.append(await T.unarchive()) # Unarchive because we can't delete messages from archived threads
                 print("Channel {} has threads {}".format(channel.name, str([t.name for t in all_threads])))
-                n_deleted = 0
                 for thread in all_threads:
+                    n_deleted = 0
                     async for msg in thread.history(before = prev_time, oldest_first = True, limit = None):
                         print("Processing message in thread {}: {}".format(thread.name, msg.system_content))
                         success = await self.process_message(msg)

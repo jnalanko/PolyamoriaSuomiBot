@@ -2,16 +2,22 @@ import sys
 
 import discord
 import yaml
+import logging
+import pytz
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
 from datetime import datetime, timedelta
 
+logging.basicConfig(level=logging.INFO)
+
 class AutoDeleteCallBack:
     async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id):
+
         # Find the log channel
         log_channel = None
         guild = client.get_guild(guild_id)
+        
         for channel in guild.channels:
             if channel.name == log_channel_name:
                 log_channel = channel # todo: what if not found?
@@ -19,14 +25,27 @@ class AutoDeleteCallBack:
         # Run autodelete
         for channel in guild.channels:
             if channel.name == channel_name:
-                prev_time = datetime.utcnow() - timedelta(minutes=delete_older_than_minutes)
+                prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
+
+                # Autodelete in channel
                 n_deleted = 0
                 async for elem in channel.history(before = prev_time, oldest_first = True, limit = None):
                     if elem.pinned == False: # Skip pinned messages
-                        print("Deleting message: " + str(elem))
+                        print("Deleting message on channel {}: {}".format(channel.name, elem.content))
                         await elem.delete()
-                    n_deleted += 1
+                        n_deleted += 1
                 await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+
+                # Autodelete in threads under this channel
+                n_deleted = 0
+                for thread in channel.threads:
+                    async for elem in thread.history(before = prev_time, oldest_first = True, limit = None):
+                        if elem.pinned == False: # Skip pinned messages
+                            print("Deleting message in thread {}: {}".format(thread.name, elem.content))
+                            await elem.delete()
+                            n_deleted += 1
+                    await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+
 
 # An object of this class manages the bot for *one* server.
 class MyBot:
@@ -62,7 +81,6 @@ class MyBot:
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_name):
-        print("debug", self.jobs)
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
                 del self.autodel_config[i]
@@ -119,7 +137,7 @@ instances = dict() # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
-client = discord.Client()
+client = discord.Client(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True))
 
 # Define event handlers for the client
 # on_ready may be called multiple times in the event of a reconnect,

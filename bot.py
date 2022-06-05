@@ -50,8 +50,12 @@ class AutoDeleteCallBack:
                 await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
                 # Autodelete in threads under this channel
+                all_threads = channel.threads
+                async for T in channel.archived_threads(limit=None):
+                    all_threads.append(await T.unarchive()) # Unarchive because we can't delete messages from archived threads
+                print("Channel {} has threads {}".format(channel.name, str([t.name for t in all_threads])))
                 n_deleted = 0
-                for thread in channel.threads:
+                for thread in all_threads:
                     async for msg in thread.history(before = prev_time, oldest_first = True, limit = None):
                         print("Processing message in thread {}: {}".format(thread.name, msg.system_content))
                         success = await self.process_message(msg)

@@ -12,6 +12,18 @@ from datetime import datetime, timedelta
 logging.basicConfig(level=logging.INFO)
 
 class AutoDeleteCallBack:
+
+    # Returns whether the message was deleted
+    async def process_message(self, msg):
+        if msg.pinned == False and not msg.is_system(): # Skip pinned and system messages
+            try: 
+                await msg.delete()
+                return True
+            except Exception as e:
+                print("Error deleting message: " + str(e))
+                return False
+        return False
+
     async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id):
 
         # Find the log channel
@@ -29,21 +41,23 @@ class AutoDeleteCallBack:
 
                 # Autodelete in channel
                 n_deleted = 0
-                async for elem in channel.history(before = prev_time, oldest_first = True, limit = None):
-                    if elem.pinned == False: # Skip pinned messages
-                        print("Deleting message on channel {}: {}".format(channel.name, elem.content))
-                        await elem.delete()
-                        n_deleted += 1
+                async for msg in channel.history(before = prev_time, oldest_first = True, limit = None):
+                    print("Processing message on channel {}: {}".format(channel.name, msg.system_content))
+                    success = await self.process_message(msg)
+                    if(success): n_deleted += 1
+                    else:
+                        print("Did not delete message: {}".format(msg.system_content))
                 await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
                 # Autodelete in threads under this channel
                 n_deleted = 0
                 for thread in channel.threads:
-                    async for elem in thread.history(before = prev_time, oldest_first = True, limit = None):
-                        if elem.pinned == False: # Skip pinned messages
-                            print("Deleting message in thread {}: {}".format(thread.name, elem.content))
-                            await elem.delete()
-                            n_deleted += 1
+                    async for msg in thread.history(before = prev_time, oldest_first = True, limit = None):
+                        print("Processing message in thread {}: {}".format(thread.name, msg.system_content))
+                        success = await self.process_message(msg)
+                        if(success): n_deleted += 1
+                        else:
+                            print("Did not delete message: {}".format(msg.system_content))
                     await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
 

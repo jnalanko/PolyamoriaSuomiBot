@@ -261,7 +261,7 @@ def to_positive_integer(string):
         raise ValueError("Syntaksivirhe: " + string)
     if int(string) <= 0:
         raise ValueError("Virhe: Ei-positiivinen numero: " + string)
-    if int(string) > 1000000:
+    if int(string) > 100:
         raise ValueError("Virhe: Liian iso numero: " + string)
     return int(string)
 
@@ -307,8 +307,9 @@ async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
 
+    admin_commands(message)
+
     if message.content.startswith("!roll"):
-        
         await message.channel.send(do_roll(message.content[5:]))
 
 

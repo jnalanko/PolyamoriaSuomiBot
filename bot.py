@@ -322,7 +322,7 @@ async def on_message(message):
     if message.content.startswith("!roll"):
         expression = message.content[5:]
         result = do_roll(expression)
-        await message.channel.send(message.author.name + " heitti `" + expression + "`, tulos: `" + result + "`")
+        await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
 
 
 client.run(global_config["token"])

@@ -256,12 +256,12 @@ async def admin_commands(message):
             yaml.dump(global_config, outfile, default_flow_style=False)
         print("Updated config file", yaml_filename)
 
-def to_positive_integer(string):
+def to_positive_integer(string, upto):
     if not string.isdigit():
         raise ValueError("Syntaksivirhe: " + string)
     if int(string) <= 0:
         raise ValueError("Virhe: Ei-positiivinen numero: " + string)
-    if int(string) > 100:
+    if int(string) > upto:
         raise ValueError("Virhe: Liian iso numero: " + string)
     return int(string)
 
@@ -281,13 +281,13 @@ def do_roll(expression):
             else:
                 if token.count("d") == 0:
                     # Constant
-                    sum_of_constants += int(to_positive_integer(token))
+                    sum_of_constants += int(to_positive_integer(token, 1e6))
                 elif token.count("d") == 1:
                     # Dice
                     n_dice, n_sides = token.split('d')
                     if n_dice == "": n_dice = "1" # Implicit 1
-                    n_dice = to_positive_integer(n_dice)
-                    n_sides = to_positive_integer(n_sides)
+                    n_dice = to_positive_integer(n_dice, 100)
+                    n_sides = to_positive_integer(n_sides, 1e6)
                     while n_dice > 0:
                         rolls.append(random.randint(1,n_sides))
                         n_dice -= 1

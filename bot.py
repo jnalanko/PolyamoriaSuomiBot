@@ -320,7 +320,9 @@ async def on_message(message):
     await admin_commands(message)
 
     if message.content.startswith("!roll"):
-        await message.channel.send(do_roll(message.content[5:]))
+        expression = message.content[5:]
+        result = do_roll(expression)
+        await message.channel.send("@" + message.author.name + " + heitto " + expression + ": " + result)
 
 
 client.run(global_config["token"])

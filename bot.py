@@ -296,9 +296,11 @@ def do_roll(expression):
     except ValueError as e: return str(e)
 
     if sum_of_constants > 0: 
-        return "{} + {} = {}".format(rolls, sum_of_constants, sum(rolls) + sum_of_constants)
+        message = "{} + {} = {}".format(rolls, sum_of_constants, sum(rolls) + sum_of_constants)
     else:
-        return "{} = {}".format(rolls, sum(rolls))
+        message = "{} = {}".format(rolls, sum(rolls))
+    if len(message) > 1000: return "Liian monta heittoa"
+    else: return message
 
 
 

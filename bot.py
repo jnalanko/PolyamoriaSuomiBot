@@ -278,6 +278,8 @@ def do_roll(expression):
         tokens = expression.split()
         if len(tokens) == 0:
             return "Anna heitto muodossa 2d6 + 5"
+        if len(tokens) > 10:
+            return "Liian monta operaatiota"
         for i, token in enumerate(tokens):
             token = token.strip()
             if i % 2 == 1:

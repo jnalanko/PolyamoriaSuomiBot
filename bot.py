@@ -4,6 +4,7 @@ import discord
 import yaml
 import logging
 import pytz
+import random
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
@@ -178,9 +179,7 @@ async def on_ready():
         instances[guild.id] = instance
     print(instances)
 
-@client.event
-async def on_message(message):
-    print("onmessage", message.content)
+async def admin_commands(message):
     mybot = instances[message.guild.id]
     if message.content.startswith("!") and message.channel.name == "bottikomennot":
         if message.content.startswith("!ohjeet"):
@@ -256,6 +255,61 @@ async def on_message(message):
         with open(yaml_filename, 'w') as outfile:
             yaml.dump(global_config, outfile, default_flow_style=False)
         print("Updated config file", yaml_filename)
+
+def to_positive_integer(string):
+    if not string.isdigit():
+        raise ValueError("Syntaksivirhe: " + string)
+    if int(string) <= 0:
+        raise ValueError("Virhe: Ei-positiivinen numero: " + string)
+    if int(string) > 1000000:
+        raise ValueError("Virhe: Liian iso numero: " + string)
+    return int(string)
+
+# Returns the result as a string
+def do_roll(expression):
+    rolls = []
+    sum_of_constants = 0
+
+    try: 
+        tokens = expression.split()
+        if len(tokens) == 0:
+            return "Anna heitto muodossa 2d6 + 5"
+        for i, token in enumerate(tokens):
+            if i % 2 == 1:
+                if token != '+':
+                    raise ValueError("Syntaksivirhe: " + token)
+            else:
+                if token.count("d") == 0:
+                    # Constant
+                    sum_of_constants += int(to_positive_integer(token))
+                elif token.count("d") == 1:
+                    # Dice
+                    n_dice, n_sides = token.split('d')
+                    if n_dice == "": n_dice = "1" # Implicit 1
+                    n_dice = to_positive_integer(n_dice)
+                    n_sides = to_positive_integer(n_sides)
+                    while n_dice > 0:
+                        rolls.append(random.randint(1,n_sides))
+                        n_dice -= 1
+                else:
+                    raise ValueError("Syntaksivirhe: " + token)
+    except ValueError as e: return str(e)
+
+    if sum_of_constants > 0: 
+        return "{} + {} = {}".format(rolls, sum_of_constants, sum(rolls) + sum_of_constants)
+    else:
+        return "{} = {}".format(rolls, sum(rolls))
+
+
+
+@client.event
+async def on_message(message):
+    print("onmessage", message.content)
+    mybot = instances[message.guild.id]
+
+    if message.content.startswith("!roll"):
+        
+        await message.channel.send(do_roll(message.content[5:]))
 
 
 client.run(global_config["token"])

@@ -315,7 +315,7 @@ async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
 
-    admin_commands(message)
+    await admin_commands(message)
 
     if message.content.startswith("!roll"):
         await message.channel.send(do_roll(message.content[5:]))

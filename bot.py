@@ -10,7 +10,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
 from datetime import datetime, timedelta
 
-import konso_dice_roller
+import konso_dice_roller.konso_dice_roller as konso_dice_roller
 
 logging.basicConfig(level=logging.INFO)
 

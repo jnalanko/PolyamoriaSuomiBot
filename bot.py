@@ -331,8 +331,11 @@ async def on_message(message):
 
     elif message.content.startswith("!vanharoll"):
         expression = message.content[10:].strip()
-        result = do_roll(expression)
-        await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
+        if(len(expression) == 0):
+            await message.channel.send("Virhe: anna heitto muodossa 2d6 + 5")
+        else:
+            result = do_roll(expression)
+            await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
     
 
 

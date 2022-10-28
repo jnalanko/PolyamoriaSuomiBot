@@ -10,6 +10,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
 from datetime import datetime, timedelta
 
+import konso_dice_roller
+
 logging.basicConfig(level=logging.INFO)
 
 class AutoDeleteCallBack:
@@ -323,6 +325,9 @@ async def on_message(message):
         expression = message.content[5:]
         result = do_roll(expression)
         await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
+    elif message.content.startswith("!kroll") or message.content.startswith("!konsoroll"):
+        result = konso_dice_roller.markdown_roll_string_from_input(message.content[5:], number_of_dice_limit=100, dice_sides_limit=10**6, bonus_absolute_value_limit=10**6)
+        await message.channel.send(message.author.name + " heitti " + result)
 
 
 client.run(global_config["token"])

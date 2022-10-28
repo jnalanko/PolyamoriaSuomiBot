@@ -1,0 +1,3 @@
+[submodule "konso_dice_roller"]
+	path = konso_dice_roller
+	url = https://github.com/konsou/konso_dice_roller

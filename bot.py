@@ -322,16 +322,17 @@ async def on_message(message):
     await admin_commands(message)
 
     if message.content.startswith("!roll"):
-        expression = message.content[5:]
-        result = do_roll(expression)
-        await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
-    elif message.content.startswith("!konsoroll"):
-        expression = message.content[10:].strip()
+        expression = message.content[5:].strip()
         try:
             result = konso_dice_roller.markdown_roll_string_from_input(expression, number_of_dice_limit=100, dice_sides_limit=10**6, bonus_absolute_value_limit=10**6)
             await message.channel.send(message.author.name + " heitti " + result)
         except Exception as e:
             await message.channel.send(message.author.name + " heitti `" + expression + "`. Virhe: " + str(e))
+
+    elif message.content.startswith("!vanharoll"):
+        expression = message.content[10:].strip()
+        result = do_roll(expression)
+        await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
     
 
 

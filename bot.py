@@ -326,8 +326,12 @@ async def on_message(message):
         result = do_roll(expression)
         await message.channel.send(message.author.name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
     elif message.content.startswith("!kroll") or message.content.startswith("!konsoroll"):
-        result = konso_dice_roller.markdown_roll_string_from_input(message.content[5:], number_of_dice_limit=100, dice_sides_limit=10**6, bonus_absolute_value_limit=10**6)
-        await message.channel.send(message.author.name + " heitti " + result)
+        try:
+            result = konso_dice_roller.markdown_roll_string_from_input(message.content[5:], number_of_dice_limit=100, dice_sides_limit=10**6, bonus_absolute_value_limit=10**6)
+            await message.channel.send(message.author.name + " heitti " + result)
+        except Exception as e:
+            await message.channel.send(message.author.name + " heitti `" + message.content[5:] + "`. Virhe: " + str(e))
+    
 
 
 client.run(global_config["token"])

@@ -71,8 +71,10 @@ class AutoDeleteCallBack:
                         await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
         except Exception as e:
             errormsg = "Error deleting from channel {}: {}".format(channel, str(e))
-            print(errormsg)
-            dm_channel = client.create_dm(admin_user_id)
+
+            # Send the error message to the admin user as a DM
+            admin_user = await client.fetch_user(admin_user_id)
+            dm_channel = await client.create_dm(admin_user)
             await dm_channel.send(errormsg)
         if not channel_found:
             print("ERROR: COULD NOT FIND CHANNEL: " + channel_name)

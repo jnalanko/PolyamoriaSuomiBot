@@ -38,8 +38,10 @@ class AutoDeleteCallBack:
                 log_channel = channel # todo: what if not found?
 
         # Run autodelete
+        channel_found = False
         for channel in guild.channels:
             if channel.name == channel_name:
+                channel_found = True
                 prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
 
                 # Autodelete in channel
@@ -66,6 +68,9 @@ class AutoDeleteCallBack:
                         else:
                             print("Did not delete message: {}".format(msg.system_content))
                     await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+
+        if not channel_found:
+            print("ERROR: COULD NOT FIND CHANNEL: " + channel_name)
 
 
 # An object of this class manages the bot for *one* server.

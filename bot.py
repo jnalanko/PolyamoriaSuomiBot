@@ -27,7 +27,7 @@ class AutoDeleteCallBack:
                 return False
         return False
 
-    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id):
+    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id, admin_user_id):
 
         # Find the log channel
         log_channel = None
@@ -39,36 +39,41 @@ class AutoDeleteCallBack:
 
         # Run autodelete
         channel_found = False
-        for channel in guild.channels:
-            if channel.name == channel_name:
-                channel_found = True
-                prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
+        try:
+            for channel in guild.channels:
+                if channel.name == channel_name:
+                    channel_found = True
+                    prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
 
-                # Autodelete in channel
-                n_deleted = 0
-                async for msg in channel.history(before = prev_time, oldest_first = True, limit = None):
-                    print("Processing message on channel {}: {}".format(channel.name, msg.system_content))
-                    success = await self.process_message(msg)
-                    if(success): n_deleted += 1
-                    else:
-                        print("Did not delete message: {}".format(msg.system_content))
-                await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
-
-                # Autodelete in threads under this channel
-                all_threads = channel.threads
-                async for T in channel.archived_threads(limit=None):
-                    all_threads.append(await T.unarchive()) # Unarchive because we can't delete messages from archived threads
-                print("Channel {} has threads {}".format(channel.name, str([t.name for t in all_threads])))
-                for thread in all_threads:
+                    # Autodelete in channel
                     n_deleted = 0
-                    async for msg in thread.history(before = prev_time, oldest_first = True, limit = None):
-                        print("Processing message in thread {}: {}".format(thread.name, msg.system_content))
+                    async for msg in channel.history(before = prev_time, oldest_first = True, limit = None):
+                        print("Processing message on channel {}: {}".format(channel.name, msg.system_content))
                         success = await self.process_message(msg)
                         if(success): n_deleted += 1
                         else:
                             print("Did not delete message: {}".format(msg.system_content))
-                    await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+                    await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
+                    # Autodelete in threads under this channel
+                    all_threads = channel.threads
+                    async for T in channel.archived_threads(limit=None):
+                        all_threads.append(await T.unarchive()) # Unarchive because we can't delete messages from archived threads
+                    print("Channel {} has threads {}".format(channel.name, str([t.name for t in all_threads])))
+                    for thread in all_threads:
+                        n_deleted = 0
+                        async for msg in thread.history(before = prev_time, oldest_first = True, limit = None):
+                            print("Processing message in thread {}: {}".format(thread.name, msg.system_content))
+                            success = await self.process_message(msg)
+                            if(success): n_deleted += 1
+                            else:
+                                print("Did not delete message: {}".format(msg.system_content))
+                        await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+        except Exception as e:
+            errormsg = "Error deleting from channel {}: {}".format(channel, str(e))
+            print(errormsg)
+            dm_channel = client.create_dm(admin_user_id)
+            await dm_channel.send(errormsg)
         if not channel_found:
             print("ERROR: COULD NOT FIND CHANNEL: " + channel_name)
 
@@ -76,7 +81,7 @@ class AutoDeleteCallBack:
 # An object of this class manages the bot for *one* server.
 class MyBot:
 
-    def __init__(self, instance_config, guild_id):
+    def __init__(self, instance_config, guild_id, admin_user_id):
         print("Instance config:", instance_config)
         self.guild_id = guild_id
         self.autodel_config = instance_config["autodelete_channels"] # List of dicts {channel: X, callback_interval_minutes: Y, delete_older_than_minutes: Z] (todo: make channel a key)
@@ -84,6 +89,7 @@ class MyBot:
         self.autodelete = AutoDeleteCallBack()
         self.jobs = dict() # channel name -> job
         self.log_channel_name = "bottikomennot" # todo: configiin?
+        self.admin_user_id = admin_user_id
         
     # Updates config and the affected job. If no job is yet active, creates a new job
     def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
@@ -121,7 +127,7 @@ class MyBot:
         if channel_name in self.jobs:
             self.jobs[channel_name].remove() # Terminate existing job
 
-        self.jobs[channel_name] = self.sched.add_job(self.autodelete.run, 'interval', (client, delete_older_than_minutes, channel_name, self.log_channel_name, self.guild_id), minutes=callback_interval_minutes)
+        self.jobs[channel_name] = self.sched.add_job(self.autodelete.run, 'interval', (client, delete_older_than_minutes, channel_name, self.log_channel_name, self.guild_id, self.admin_user_id), minutes=callback_interval_minutes)
 
     def startup(self):
         print("Adding all jobs and starting the scheduler.")
@@ -173,7 +179,6 @@ async def on_ready():
     if this.running: return
     else: this.running = True
 
-    
     print("Bot started up.", flush=True)
     for guild in client.guilds:
         print("guild", guild.name, guild.id)
@@ -181,7 +186,7 @@ async def on_ready():
         if guild.id not in global_config["instances"]:
             global_config["instances"][guild.id] = {"autodelete_channels": []} # Init empty config for this guild
 
-        instance = MyBot(global_config["instances"][guild.id], guild.id) # todo: this is a bit silly
+        instance = MyBot(global_config["instances"][guild.id], guild.id, global_config["admin_user_id"]) # todo: this is a bit silly
         instance.startup()
         instances[guild.id] = instance
     print(instances)

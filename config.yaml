@@ -16,3 +16,4 @@ instances:
       callback_interval_minutes: 60
       delete_older_than_minutes: 1440
 token: get this from discord developer website
+admin_user_id: the unique integer user id of whoever is running this bot # Error messages will be DM'd to this user

@@ -158,7 +158,7 @@ instances = dict() # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
-client = discord.Client(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True))
+client = discord.Client(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
 
 # Define event handlers for the client
 # on_ready may be called multiple times in the event of a reconnect,
@@ -170,7 +170,7 @@ async def on_ready():
 
     
     print("Bot started up.", flush=True)
-    async for guild in client.fetch_guilds(limit=150): # TODO: apparently this doesn't give privileged intent data. Change to just client.guilds?
+    async for guild in client.guilds:
         print("guild", guild.name, guild.id)
 
         if guild.id not in global_config["instances"]:

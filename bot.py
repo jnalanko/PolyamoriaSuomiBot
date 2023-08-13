@@ -170,7 +170,7 @@ async def on_ready():
 
     
     print("Bot started up.", flush=True)
-    async for guild in client.fetch_guilds(limit=150):
+    async for guild in client.fetch_guilds(limit=150): # TODO: apparently this doesn't give privileged intent data. Change to just client.guilds?
         print("guild", guild.name, guild.id)
 
         if guild.id not in global_config["instances"]:

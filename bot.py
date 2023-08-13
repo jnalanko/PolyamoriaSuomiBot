@@ -175,7 +175,7 @@ async def on_ready():
 
     
     print("Bot started up.", flush=True)
-    async for guild in client.guilds:
+    for guild in client.guilds:
         print("guild", guild.name, guild.id)
 
         if guild.id not in global_config["instances"]:

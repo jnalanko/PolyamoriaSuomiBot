@@ -406,8 +406,8 @@ def do_roll(expression):
     if len(message) > 1000: return "Liian monta heittoa"
     else: return message
 
-
-
+# TODO: separate DBs for different guilds. What is an "instance" the bot anyway?
+# An instance should read only from its own database.
 
 
 @client.event

@@ -55,6 +55,10 @@ async def on_message(message):
     print("onmessage", message.content)
     if message.guild == None:
         return # DM?
+
+    if not message.guild.id in instances:
+        print("Got message from guild {} but no instance defined for that guild".format(message.guild_id))
+        return 
         
     mybot = instances[message.guild.id]
     mybot.process_message(message)

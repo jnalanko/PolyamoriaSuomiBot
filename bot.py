@@ -47,10 +47,6 @@ async def on_ready():
 
     print(instances)
 
-
-# TODO: separate DBs for different guilds. What is an "instance" the bot anyway?
-# An instance should read only from its own database.
-
 @client.event
 async def on_message(message):
     print("onmessage", message.content)

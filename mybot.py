@@ -196,7 +196,7 @@ class MyBot:
 
     def add_all_jobs(self):
         print("Adding all jobs")
-        cursor = database_connection.cursor()
+        cursor = self.database_connection.cursor()
         cursor.execute("SELECT * FROM autodelete")
         for (channel_id, callback_interval_minutes, delete_older_than_minutes) in cursor.fetchall():
             print("Adding autodelete job for channel", channel_id)
@@ -218,7 +218,7 @@ class MyBot:
         
     def add_message_to_db(self, username):
 
-        cursor = database_connection.cursor()
+        cursor = self.database_connection.cursor()
 
         # Get all rows with the given username sorted by date
         cursor.execute("SELECT * FROM recent_message_times WHERE username = %s ORDER BY date DESC", [username])
@@ -233,7 +233,7 @@ class MyBot:
         # Add the new message
         cursor.execute("INSERT INTO recent_message_times (username, date) VALUES (%s, NOW())", [username])
 
-        database_connection.commit()
+        self.database_connection.commit()
 
     async def handle_admin_comands(self, message):
         if message.content.startswith("!") and message.channel.name == "bottikomennot": # TODO: channel id

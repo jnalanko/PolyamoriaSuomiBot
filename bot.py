@@ -413,6 +413,9 @@ def do_roll(expression):
 @client.event
 async def on_message(message):
     print("onmessage", message.content)
+    if message.guild == None:
+        return # DM?
+        
     mybot = instances[message.guild.id]
     mybot.add_message_to_db(message.author.name)
 

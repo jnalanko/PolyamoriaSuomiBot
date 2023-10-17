@@ -37,13 +37,12 @@ async def on_ready():
     else: this.running = True
 
     print("Client started up.", flush=True)
-    for guild in client.guilds:
-        print("guild", guild.name, guild.id)
-
-        instance = MyBot(guild.id, config[guild.id]["db_name"], config[guild.id]["db_user"], config[guild.id]["db_password"], config[guild.id]["admin_user_id"], client)
+    for guild_id in config["instances"]:
+        cfg = config["instances"][guild_id]
+        instance = MyBot(guild_id, cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], client)
 
         instance.startup()
-        instances[guild.id] = instance
+        instances[guild_id] = instance
 
     print(instances)
 

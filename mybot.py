@@ -141,29 +141,15 @@ class MyBot:
         self.number_of_message_times_to_remember = 5 # Todo: to config
         
     # If no job is yet active, creates a new job
-    def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
-
-        # TODO use the database.
-        return 
+    def set_autodel(self, channel_id, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
 
         # Check if autodelete is already active for the channel and if so, update config the values
 
-        existing = False
-        for i in range(len(self.autodel_config)):
-            if self.autodel_config[i]["channel"] == channel_name:
-                self.autodel_config[i]["callback_interval_minutes"] = callback_interval_minutes
-                self.autodel_config[i]["delete_older_than_minutes"] = delete_older_than_minutes
-                existing = True
-
-        # Autodelete is not yet active for this channel
-        if not existing:
-            # Add new entry to the config
-            self.autodel_config.append({"channel": channel_name, "callback_interval_minutes": callback_interval_minutes, "delete_older_than_minutes": delete_older_than_minutes})
-
-        self.create_job(channel_name, callback_interval_minutes, delete_older_than_minutes) # Create new job
-
-        print("Autodel config is now:", self.autodel_config)
-        return self.autodel_config
+        cursor = self.database_connection.cursor()
+        cursor.execute("REPLACE INTO autodelete (channel_id, callback_interval_minutes, delete_older_than_minutes) VALUES (%s, %s, %s)", [channel_id, callback_interval_minutes, delete_older_than_minutes])
+        
+        # Create a job (terminates existing job if exists)
+        self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_name):
@@ -256,6 +242,7 @@ class MyBot:
                 lines.append("Esimerkiksi jos haluat asettaa kanavan #mielenterveys poistoajaksi 60 päivää siten, että poistot tehdään kerran päivässä, anna kirjoita komentokanavalle komento `!autodelete aseta mielenterveys 90 24`. Annetuiden numeroiden on oltava kokonaislukuja. Tällä komennolla voi myös muokata olemassaolevia asetuksia kanavalle. Jos haluat myöhemmin ottaa poiston pois päältä, anna komento `!autodelete lopeta mielenterveys`.")
                 await message.channel.send("\n".join(lines))
             elif message.content.startswith("!asetukset"):
+                print("Calling message")
                 await message.channel.send(self.get_settings_string())
             elif message.content.startswith("!autodelete aja-nyt"):
                 await message.channel.send("Ok, ajetaan kaikki autodeletoinnit nyt.")
@@ -284,15 +271,15 @@ class MyBot:
                     if time_horizon_days < 1 or interval_hours < 1:
                         raise ValueError("Time parameter not positive")
                 except ValueError:
-                    await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavan nimi ja kaksi positiivista kokonaislukua.")
+                    await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavalinkki ja kaksi positiivista kokonaislukua.")
                     return
 
-                # Check that the channel exists
-                if not (channel_name in [C.name for C in message.guild.channels]):
-                    await message.channel.send("Virhe: Kanavaa #{} ei ole olemassa tai minulla ei ole oikeuksia siihen.".format(channel_name))
+                if len(message.channel_mentions) != 1:
+                    await message.channel.send("Virhe: kanavalinkki puuttuu tai yli 1 kanavalinkki")
                     return
                 
-                await message.channel.send("TODO") # TODO: update database and start job
+                self.set_autodel(message.channel_mentions[0].id, interval_hours*60, time_horizon_days*24*60)
+                
             else:
                 await message.channel.send("Tuntematon komento: " + message.content.split()[0])
     

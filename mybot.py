@@ -132,7 +132,7 @@ class MyBot:
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
-        self.jobs = dict() # channel name -> job
+        self.jobs = dict() # channel id -> job
         self.log_channel_name = "bottikomennot" # todo: configiin?
         self.admin_user_id = admin_user_id
         self.guild_id = guild_id
@@ -152,19 +152,15 @@ class MyBot:
         self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
 
     # Updates config and removes the affected job (if exists)
-    def remove_autodel_from_channel(self, channel_name):
+    def remove_autodel_from_channel(self, channel_id):
+        cursor = self.database_connection.cursor()
+        cursor.execute("DELETE FROM autodelete WHERE channel_id = %s", [channel_id])
 
-        # TODO use the database.
-        return 
+        if channel_id in self.jobs: 
+            self.jobs[channel_id].remove()
+            del self.jobs[channel_id]
 
-        for i in range(len(self.autodel_config)):
-            if self.autodel_config[i]["channel"] == channel_name:
-                del self.autodel_config[i]
-                break
-        if channel_name in self.jobs: 
-            self.jobs[channel_name].remove()
-            del self.jobs[channel_name]
-        return self.autodel_config
+        self.database_connection.commit()
 
     # Does not update config
     def create_job(self, channel_id, callback_interval_minutes, delete_older_than_minutes):
@@ -259,8 +255,7 @@ class MyBot:
                     await message.channel.send("Virhe: kanavalinkki puuttuu tai yli 1 kanavalinkki")
                     return                                
 
-                cursor = self.database_connection.cursor()
-                cursor.execute("DELETE FROM autodelete WHERE channel_id = %s", [message.channel_mentions[0].id])
+                self.remove_autodel_from_channel(message.channel_mentions[0].id)
                 await message.channel.send("Ok, poistin kanavan {} autodeletointiasetukset.".format(message.channel_mentions[0].name))
             
             elif message.content.startswith("!autodelete aseta"):

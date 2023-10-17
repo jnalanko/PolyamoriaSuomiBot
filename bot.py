@@ -32,7 +32,7 @@ class AutoDeleteCallBack:
                 return False
         return False
 
-    async def run(self, client, delete_older_than_minutes, channel_name, log_channel_name, guild_id, admin_user_id):
+    async def run(self, client, delete_older_than_minutes, channel_id, log_channel_name, guild_id, admin_user_id):
 
         # Find the log channel
         log_channel = None
@@ -46,7 +46,7 @@ class AutoDeleteCallBack:
         channel_found = False
         try:
             for channel in guild.channels:
-                if channel.name == channel_name:
+                if channel.id == channel_id:
                     channel_found = True
                     prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
 
@@ -58,7 +58,7 @@ class AutoDeleteCallBack:
                         if(success): n_deleted += 1
                         else:
                             print("Did not delete message: {}".format(msg.system_content))
-                    await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel_name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+                    await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
                     # Autodelete in threads under this channel
                     all_threads = channel.threads
@@ -75,14 +75,16 @@ class AutoDeleteCallBack:
                                 print("Did not delete message: {}".format(msg.system_content))
                         await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
         except Exception as e:
-            errormsg = "Error deleting from channel {}: {}".format(channel, str(e))
-
             # Send the error message to the admin user as a DM
             admin_user = await client.fetch_user(admin_user_id)
             dm_channel = await client.create_dm(admin_user)
-            await dm_channel.send(errormsg)
+            await dm_channel.send("Error deleting from channel {}: {}".format(channel, str(e)))
+
         if not channel_found:
-            print("ERROR: COULD NOT FIND CHANNEL: " + channel_name)
+            # Send the error message to the admin user as a DM
+            admin_user = await client.fetch_user(admin_user_id)
+            dm_channel = await client.create_dm(admin_user)
+            await dm_channel.send("Error: could not find channel: " + str(channel_id))
 
 
 # An object of this class manages the bot for *one* server.
@@ -98,9 +100,14 @@ class MyBot:
         self.log_channel_name = "bottikomennot" # todo: configiin?
         self.admin_user_id = admin_user_id
         
-    # Updates config and the affected job. If no job is yet active, creates a new job
+    # If no job is yet active, creates a new job
     def set_autodel(self, channel_name, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
+
+        # TODO use the database.
+        return 
+
         # Check if autodelete is already active for the channel and if so, update config the values
+
         existing = False
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
@@ -120,6 +127,10 @@ class MyBot:
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_name):
+
+        # TODO use the database.
+        return 
+
         for i in range(len(self.autodel_config)):
             if self.autodel_config[i]["channel"] == channel_name:
                 del self.autodel_config[i]
@@ -130,11 +141,11 @@ class MyBot:
         return self.autodel_config
 
     # Does not update config
-    def create_job(self, channel_name, callback_interval_minutes, delete_older_than_minutes):
-        if channel_name in self.jobs:
-            self.jobs[channel_name].remove() # Terminate existing job
+    def create_job(self, channel_id, callback_interval_minutes, delete_older_than_minutes):
+        if channel_id in self.jobs:
+            self.jobs[channel_id].remove() # Terminate existing job
 
-        self.jobs[channel_name] = self.sched.add_job(self.autodelete.run, 'interval', (client, delete_older_than_minutes, channel_name, self.log_channel_name, self.guild_id, self.admin_user_id), minutes=callback_interval_minutes)
+        self.jobs[channel_id] = self.sched.add_job(self.autodelete.run, 'interval', (client, delete_older_than_minutes, channel_id, self.log_channel_name, self.guild_id, self.admin_user_id), minutes=callback_interval_minutes)
 
     def startup(self):
         print("Adding all jobs and starting the scheduler.")
@@ -143,9 +154,11 @@ class MyBot:
 
     def add_all_jobs(self):
         print("Adding all jobs")
-        for X in self.autodel_config:
-            print("Adding " + str(X))
-            self.create_job(X["channel"], X["callback_interval_minutes"], X["delete_older_than_minutes"])
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT * FROM autodelete")
+        for (channel_id, callback_interval_minutes, delete_older_than_minutes) in cursor.fetchall():
+            print("Adding autodelete job for channel", channel_id)
+            self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
         print(self.jobs)
 
     def trigger_all_jobs_now(self):
@@ -214,7 +227,7 @@ def open_database(db_name, username, password):
 
     create_autodelete_table = """
     CREATE TABLE IF NOT EXISTS autodelete (
-        channel_id INT PRIMARY KEY,
+        channel_id BIGINT UNSIGNED PRIMARY KEY,
         callback_interval_minutes INT,
         delete_older_than_minutes INT
     )

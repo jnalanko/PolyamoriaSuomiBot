@@ -167,16 +167,13 @@ class MyBot:
 
         # Get all rows with the given username sorted by date
         cursor.execute("SELECT * FROM recent_message_times WHERE username = %s ORDER BY date DESC", [username])
-        cursor.fetchall()
+        nrows = len(cursor.fetchall())
 
         # Delete old rows if needed
-        print("Rowcount is", cursor.rowcount)
-        number_to_delete = max(cursor.rowcount - (number_of_message_times_to_remember - 1), 0)
+        number_to_delete = max(nrows - (number_of_message_times_to_remember - 1), 0)
         if number_to_delete > 0:
             # Delete the oldest rows
             cursor.execute("DELETE FROM recent_message_times WHERE username = %s ORDER BY date LIMIT %s", [username, number_to_delete])
-
-        
 
         # Add the new message
         cursor.execute("INSERT INTO recent_message_times (username, date) VALUES (%s, NOW())", [username])

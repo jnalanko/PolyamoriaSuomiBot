@@ -6,6 +6,8 @@ import logging
 import pytz
 import random
 
+from send_dm import send_dm
+
 import mysql.connector
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -115,15 +117,11 @@ class AutoDeleteCallBack:
 
         except Exception as e:
             # Send the error message to the admin user as a DM
-            admin_user = await api.fetch_user(admin_user_id)
-            dm_channel = await api.create_dm(admin_user)
-            await dm_channel.send("Error deleting from channel {}: {}".format(channel, str(e)))
+            await send_dm(api, admin_user_id, "Error deleting from channel {}: {}".format(channel, str(e)))
 
         if not channel_found:
             # Send the error message to the admin user as a DM
-            admin_user = await api.fetch_user(admin_user_id)
-            dm_channel = await api.create_dm(admin_user)
-            await dm_channel.send("Error: could not find channel: " + str(channel_id))
+            await send_dm(api, admin_user_id, "Error: could not find channel: " + str(channel_id))
 
 
 # An object of this class manages the bot for *one* server.

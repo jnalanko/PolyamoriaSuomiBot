@@ -5,6 +5,7 @@ import yaml
 import logging
 import random
 from mybot import MyBot
+from send_dm import send_dm
 
 import mysql.connector
 
@@ -57,7 +58,8 @@ async def on_message(message):
         return # DM?
 
     if not message.guild.id in instances:
-        print("Got message from guild {} but no instance defined for that guild".format(message.guild_id))
+        admin = config["master_admin_user_id"]
+        send_dm(client, admin, "Got message from guild {} but no instance defined for that guild".format(message.guild_id))
         return 
         
     mybot = instances[message.guild.id]

@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 
 database_connection = None # SQL database connection
+number_of_message_times_to_remember = 5 # Todo: to config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -160,15 +161,28 @@ class MyBot:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
         
-    def update_activity_timestamp(self, username):
+    def add_message_to_db(self, username):
 
         cursor = database_connection.cursor()
 
-        # If username is not in table, insert it
-        cursor.execute("INSERT IGNORE INTO activity (username, last_message_date) VALUES (%s, NOW())", [username])
+        # Get all rows with the given username sorted by date
+        cursor.execute("SELECT * FROM recent_message_times WHERE username = %s ORDER BY date DESC", [username])
+        cursor.fetchall()
+
+        # Delete old rows if needed
+        print("Rowcount is", cursor.rowcount)
+        number_to_delete = max(cursor.rowcount - (number_of_message_times_to_remember - 1), 0)
+        if number_to_delete > 0:
+            # Delete the oldest rows
+            cursor.execute("DELETE FROM recent_message_times WHERE username = %s ORDER BY date LIMIT %s", [username, number_to_delete])
+
+        
+
+        # Add the new message
+        cursor.execute("INSERT INTO recent_message_times (username, date) VALUES (%s, NOW())", [username])
 
         # Update the date
-        cursor.execute("UPDATE activity SET last_message_date = NOW() WHERE username = %s", [username])
+        # cursor.execute("UPDATE recent_message_times SET last_message_date = NOW() WHERE username = %s", [username])
 
         database_connection.commit()
 
@@ -190,13 +204,26 @@ def open_database(db_name, username, password):
     cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
     cursor.execute("USE {}".format(db_name))
     
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS activity (
-        username VARCHAR(255) PRIMARY KEY,
-        last_message_date DATETIME
+    create_message_times_table = """
+    CREATE TABLE IF NOT EXISTS recent_message_times (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255),
+        date DATETIME,
+        INDEX message_times_index (username)
     )
     """
-    cursor.execute(create_table_query)
+
+    cursor.execute(create_message_times_table)
+
+    create_autodelete_table = """
+    CREATE TABLE IF NOT EXISTS autodelete (
+        channel_id INT PRIMARY KEY,
+        callback_interval_minutes INT,
+        delete_older_than_minutes INT
+    )
+    """
+
+    cursor.execute(create_autodelete_table)
 
     database_connection.commit()
 
@@ -377,7 +404,7 @@ def do_roll(expression):
 async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
-    mybot.update_activity_timestamp(message.author.name)
+    mybot.add_message_to_db(message.author.name)
 
     await admin_commands(message)
 

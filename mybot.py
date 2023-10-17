@@ -254,9 +254,15 @@ class MyBot:
                 if len(tokens) != 3:
                     await message.channel.send("Virhe: Väärä määrä parametreja. Komennolle `!autodelete lopeta` täytyy antaa yksi parametri.")
                     return
-                
-                await message.channel.send("TODO") # TODO: update database
 
+                if len(message.channel_mentions) != 1:
+                    await message.channel.send("Virhe: kanavalinkki puuttuu tai yli 1 kanavalinkki")
+                    return                                
+
+                cursor = self.database_connection.cursor()
+                cursor.execute("DELETE FROM autodelete WHERE channel_id = %s", [message.channel_mentions[0].id])
+                await message.channel.send("Ok, poistin kanavan {} autodeletointiasetukset.".format(message.channel_mentions[0].name))
+            
             elif message.content.startswith("!autodelete aseta"):
                 tokens = message.content.split()
 

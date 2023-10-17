@@ -6,11 +6,15 @@ import logging
 import pytz
 import random
 
+import mysql.connector
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
 from datetime import datetime, timedelta
 
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
+
+database_connection = None # SQL database connection
 
 logging.basicConfig(level=logging.INFO)
 
@@ -155,6 +159,46 @@ class MyBot:
         for job in self.autodel_config:
             lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
+        
+    def update_activity_timestamp(self, username):
+
+        cursor = database_connection.cursor()
+
+        # If username is not in table, insert it
+        cursor.execute("INSERT IGNORE INTO activity (username, last_message_date) VALUES (%s, NOW())", [username])
+
+        # Update the date
+        cursor.execute("UPDATE activity SET last_message_date = NOW() WHERE username = %s", [username])
+
+        database_connection.commit()
+
+def open_database(db_name, username, password):
+
+    global database_connection
+
+    db_config = {
+        "host": "localhost",
+        "user": username,
+        "password": password,
+    }
+
+    database_connection = mysql.connector.connect(**db_config)
+    cursor = database_connection.cursor()
+
+    # cursor.execute does not support sanitized CREATE DATABASE queries.
+    # So we just trust our own config and plug in the database name directly.
+    cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
+    cursor.execute("USE {}".format(db_name))
+    
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS activity (
+        username VARCHAR(255) PRIMARY KEY,
+        last_message_date DATETIME
+    )
+    """
+    cursor.execute(create_table_query)
+
+    database_connection.commit()
 
 # Todo: Use channel objects instead of channel names
 
@@ -171,6 +215,7 @@ instances = dict() # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
+open_database(global_config["db_name"], global_config["db_user"], global_config["db_password"])
 client = discord.Client(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
 
 # Define event handlers for the client
@@ -326,10 +371,13 @@ def do_roll(expression):
 
 
 
+
+
 @client.event
 async def on_message(message):
     print("onmessage", message.content)
     mybot = instances[message.guild.id]
+    mybot.update_activity_timestamp(message.author.name)
 
     await admin_commands(message)
 

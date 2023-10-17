@@ -279,6 +279,7 @@ class MyBot:
                     return
                 
                 self.set_autodel(message.channel_mentions[0].id, interval_hours*60, time_horizon_days*24*60)
+                await message.channel.send("Ok, asetin kanavan {} poistamaan vähintään {} päivää vanhat viestit {} tunnin välein.".format(channel_name, time_horizon_days, interval_hours))
                 
             else:
                 await message.channel.send("Tuntematon komento: " + message.content.split()[0])

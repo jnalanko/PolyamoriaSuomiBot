@@ -290,7 +290,7 @@ class MyBot:
             else:
                 await message.channel.send("Tuntematon komento: " + message.content.split()[0])
     
-    def process_message(self, message):
+    async def process_message(self, message):
 
         self.add_message_to_db(message.author.name)
 

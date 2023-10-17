@@ -233,7 +233,7 @@ class MyBot:
 
         self.database_connection.commit()
 
-    async def handle_admin_comands(self, message):
+    async def handle_admin_commands(self, message):
         if message.content.startswith("!") and message.channel.name == "bottikomennot": # TODO: channel id
             if message.content.startswith("!ohjeet"):
                 lines = []

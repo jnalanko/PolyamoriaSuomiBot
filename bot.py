@@ -3,13 +3,8 @@ import sys
 import discord
 import yaml
 import logging
-import random
 from mybot import MyBot
 from send_dm import send_dm
-
-import mysql.connector
-
-import konso_dice_roller.konso_dice_roller as konso_dice_roller
 
 logging.basicConfig(level=logging.INFO)
 

@@ -200,8 +200,6 @@ class MyBot:
             channel_name = self.api.get_channel(channel_id).name
             lines.append("**#{}**: {:.2f} tunnin välein vähintään {:.2f} päivää vanhat viestit.".format(channel_name, interval_minutes/60, delete_older_than_minutes/(60*24)))
         
-        #for job in self.autodel_config:
-            #lines.append("**#{}**: Poistan {} tunnin välein vähintään {} päivää vanhat viestit.".format(job["channel"], job["callback_interval_minutes"]//60, job["delete_older_than_minutes"]//(60*24)))
         return "\n".join(lines)
         
     def add_message_to_db(self, username):

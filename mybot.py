@@ -223,7 +223,7 @@ class MyBot:
         nrows = len(cursor.fetchall())
 
         # Delete old rows if needed
-        number_to_delete = max(nrows - (number_of_message_times_to_remember - 1), 0)
+        number_to_delete = max(nrows - (self.number_of_message_times_to_remember - 1), 0)
         if number_to_delete > 0:
             # Delete the oldest rows
             cursor.execute("DELETE FROM recent_message_times WHERE username = %s ORDER BY date LIMIT %s", [username, number_to_delete])

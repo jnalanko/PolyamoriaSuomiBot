@@ -292,7 +292,7 @@ class MyBot:
 
         self.add_message_to_db(message.author.name)
 
-        await self.admin_commands(message)
+        await self.handle_admin_commands(message)
 
         if message.content.startswith("!roll"):
             expression = message.content[5:].strip()

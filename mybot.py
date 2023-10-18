@@ -6,6 +6,8 @@ import logging
 import pytz
 import random
 
+from collections import defaultdict
+
 from datetime import datetime, timedelta, timezone
 
 from zoneinfo import ZoneInfo
@@ -267,7 +269,7 @@ class MyBot:
                     channel_name, time_horizon_days, interval_hours = tokens[2], int(tokens[3]), int(tokens[4])
                     if time_horizon_days < 1 or interval_hours < 1:
                         raise ValueError("Time parameter not positive")
-                except ValueError:
+                except ValueError:  
                     await message.channel.send("Virhe: Vääränlaiset parametrit. Komennolle `!autodelete aseta` täytyy antaa kanavalinkki ja kaksi positiivista kokonaislukua.")
                     return
 
@@ -301,11 +303,30 @@ class MyBot:
             return True
     
         return False
+    
+    async def midnight_leaderboard_command(self, ctx):
+        cursor = self.database_connection.cursor()
+        cursor.execute("SELECT username, date FROM midnight_winners")
+        winners = cursor.fetchall()
+        lines = []
+        lines.append("**Midnight leaderboard**")
+        wincounts = defaultdict(int)
+        for (username, date) in winners:
+            wincounts[username] += 1
+        pairs = [(wincounts[username], username) for username in wincounts]
+        for i, (wins, username) in enumerate(sorted(pairs)[::-1]): # In descending order
+            lines.append("**{}**. **{}**: {} × 🏆".format(i+1, username, wins))
+        await ctx.respond("\n".join(lines))
         
     async def process_message(self, message):
 
         if self.check_midnight_winner(message):
             await message.add_reaction('🏆')
+
+        #debug_guild = await self.api.fetch_guild(self.guild_id)
+        #debug_member = await debug_guild.fetch_member(message.author.id)  
+        #debug = debug_member.display_name
+        #print("Debug:", debug_member.nick)
 
         self.increment_todays_message_count(message.author.name)
 

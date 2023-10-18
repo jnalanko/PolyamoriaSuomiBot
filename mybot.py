@@ -275,6 +275,9 @@ class MyBot:
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)
 
+        if message.channel.id == 849763655632420937 and "Happy midnight" in message.content: # Todo: to config
+            await message.add_reaction('🏆')
+
         if message.content.startswith("!roll"):
             expression = message.content[5:].strip()
             try:

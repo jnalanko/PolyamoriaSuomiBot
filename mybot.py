@@ -6,13 +6,16 @@ import logging
 import pytz
 import random
 
+from datetime import datetime, timedelta, timezone
+
+from zoneinfo import ZoneInfo
+
 from send_dm import send_dm
 
 import mysql.connector
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from multiprocessing                import Process
-from datetime import datetime, timedelta
 
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
@@ -54,6 +57,15 @@ def open_database(db_name, username, password):
 
     cursor.execute(create_autodelete_table)
 
+    midnight_winners = """
+    CREATE TABLE IF NOT EXISTS midnight_winners (
+        date DATE PRIMARY KEY,
+        username VARCHAR(255)
+    )
+    """
+
+    cursor.execute(midnight_winners)
+    
     database_connection.commit()
 
     return database_connection
@@ -83,7 +95,7 @@ class AutoDeleteCallBack:
             for channel in guild.channels:
                 if channel.id == channel_id:
                     channel_found = True
-                    prev_time = datetime.now(pytz.utc)  - timedelta(minutes=delete_older_than_minutes)
+                    prev_time = datetime.now(timezone.utc)  - timedelta(minutes=delete_older_than_minutes)
 
                     # Autodelete in channel
                     n_deleted = 0
@@ -268,15 +280,36 @@ class MyBot:
             else:
                 await message.channel.send("Tuntematon komento: " + message.content.split()[0])
     
+    def message_date_in_helsinki(self, message):
+        helsinki_time = message.created_at.astimezone(ZoneInfo("Europe/Helsinki"))
+        return helsinki_time.date()
+
+    def check_midnight_winner(self, message):
+        helsinki_date = self.message_date_in_helsinki(message)
+        if message.channel.id == 849763655632420937 and "happy midnight" in message.content.lower(): # Todo: to config
+            cursor = self.database_connection.cursor()
+            
+            # Check if there exists a column with the current date
+            cursor.execute("SELECT * FROM midnight_winners WHERE date = %s", [helsinki_date])
+            if len(cursor.fetchall()) > 0:
+                return # Already have a winner for today
+            
+            cursor.execute("INSERT INTO midnight_winners (date, username) VALUES (%s, %s)", [helsinki_date, message.author.name])
+            
+            self.database_connection.commit()
+            return True
+    
+        return False
+        
     async def process_message(self, message):
+
+        if self.check_midnight_winner(message):
+            await message.add_reaction('🏆')
 
         self.increment_todays_message_count(message.author.name)
 
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)
-
-        if message.channel.id == 849763655632420937 and "Happy midnight" in message.content: # Todo: to config
-            await message.add_reaction('🏆')
 
         if message.content.startswith("!roll"):
             expression = message.content[5:].strip()

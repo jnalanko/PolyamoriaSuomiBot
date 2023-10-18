@@ -135,13 +135,14 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, bot_channel_id, db_name, db_user, db_password, admin_user_id, api):
+    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, db_name, db_user, db_password, admin_user_id, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
         self.jobs = dict() # channel id -> job
         self.bot_channel_id = bot_channel_id
         self.admin_user_id = admin_user_id
+        self.midnight_channel_id = midnight_channel_id
         self.guild_id = guild_id
         self.api = api
         self.database_connection = open_database(db_name, db_user, db_password)
@@ -286,7 +287,7 @@ class MyBot:
 
     def check_midnight_winner(self, message):
         helsinki_date = self.message_date_in_helsinki(message)
-        if message.channel.id == 849763655632420937 and "happy midnight" in message.content.lower(): # Todo: to config
+        if message.channel.id == self.midnight_channel_id and "happy midnight" in message.content.lower():
             cursor = self.database_connection.cursor()
             
             # Check if there exists a column with the current date

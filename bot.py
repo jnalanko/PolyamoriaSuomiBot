@@ -35,7 +35,7 @@ async def on_ready():
     print("Client started up.", flush=True)
     for guild_id in config["instances"]:
         cfg = config["instances"][guild_id]
-        instance = MyBot(guild_id, cfg["bot_channel_id"], cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], client)
+        instance = MyBot(guild_id, cfg["bot_channel_id"], cfg["midnight_channel_id"], cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], client)
 
         instance.startup()
         instances[guild_id] = instance

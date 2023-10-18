@@ -216,8 +216,8 @@ class MyBot:
 
         self.database_connection.commit()
 
-    async def handle_admin_commands(self, message):
-        if message.content.startswith("!") and message.channel.name == "bottikomennot": # TODO: channel id
+    async def handle_bot_channel_message(self, message):
+        if message.content.startswith("!"):
             if message.content.startswith("!ohjeet"):
                 lines = []
                 lines.append("**PolyamoriaSuomiBot**")
@@ -282,7 +282,8 @@ class MyBot:
 
         self.add_message_to_db(message.author.name)
 
-        await self.handle_admin_commands(message)
+        if message.channel.id == self.bot_channel_id:
+            await self.handle_bot_channel_message(message)
 
         if message.content.startswith("!roll"):
             expression = message.content[5:].strip()

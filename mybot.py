@@ -33,16 +33,16 @@ def open_database(db_name, username, password):
     cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
     cursor.execute("USE {}".format(db_name))
     
-    create_message_times_table = """
-    CREATE TABLE IF NOT EXISTS recent_message_times (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+    create_message_counts_table = """
+    CREATE TABLE IF NOT EXISTS message_counts (
         username VARCHAR(255),
-        date DATETIME,
-        INDEX message_times_index (username)
+        date DATE,
+        count INT,
+        PRIMARY KEY (username, date)
     )
     """
 
-    cursor.execute(create_message_times_table)
+    cursor.execute(create_message_counts_table)
 
     create_autodelete_table = """
     CREATE TABLE IF NOT EXISTS autodelete (
@@ -197,22 +197,12 @@ class MyBot:
         
         return "\n".join(lines)
         
-    def add_message_to_db(self, username):
+    def increment_todays_message_count(self, username):
 
         cursor = self.database_connection.cursor()
 
-        # Get all rows with the given username sorted by date
-        cursor.execute("SELECT * FROM recent_message_times WHERE username = %s ORDER BY date DESC", [username])
-        nrows = len(cursor.fetchall())
-
-        # Delete old rows if needed
-        number_to_delete = max(nrows - (self.number_of_message_times_to_remember - 1), 0)
-        if number_to_delete > 0:
-            # Delete the oldest rows
-            cursor.execute("DELETE FROM recent_message_times WHERE username = %s ORDER BY date LIMIT %s", [username, number_to_delete])
-
-        # Add the new message
-        cursor.execute("INSERT INTO recent_message_times (username, date) VALUES (%s, NOW())", [username])
+        # Create a new counter or increment existing
+        cursor.execute("INSERT INTO message_counts (username, date, count) VALUES (%s, CURDATE(), 1) ON DUPLICATE KEY UPDATE count = count + 1;", [username])
 
         self.database_connection.commit()
 
@@ -280,7 +270,7 @@ class MyBot:
     
     async def process_message(self, message):
 
-        self.add_message_to_db(message.author.name)
+        self.increment_todays_message_count(message.author.name)
 
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)

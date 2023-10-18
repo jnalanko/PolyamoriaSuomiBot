@@ -72,15 +72,10 @@ class AutoDeleteCallBack:
         return False
 
     # api is of type discord.Client
-    async def run(self, api, delete_older_than_minutes, channel_id, log_channel_name, guild_id, admin_user_id):
+    async def run(self, api, delete_older_than_minutes, channel_id, bot_channel_id, guild_id, admin_user_id):
 
-        # Find the log channel
-        log_channel = None
         guild = api.get_guild(guild_id)
-        
-        for channel in guild.channels:
-            if channel.name == log_channel_name:
-                log_channel = channel # todo: what if not found?
+        bot_channel = api.get_channel(bot_channel_id)
 
         # Run autodelete
         channel_found = False
@@ -98,7 +93,7 @@ class AutoDeleteCallBack:
                         if(success): n_deleted += 1
                         else:
                             print("Did not delete message: {}".format(msg.system_content))
-                    await log_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+                    await bot_channel.send("Poistin kanavalta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(channel.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
                     # Autodelete in threads under this channel
                     all_threads = channel.threads
@@ -113,7 +108,7 @@ class AutoDeleteCallBack:
                             if(success): n_deleted += 1
                             else:
                                 print("Did not delete message: {}".format(msg.system_content))
-                        await log_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
+                        await bot_channel.send("Poistin ketjusta **#{}** viestit ennen ajanhetkeä {} UTC (yhteensä {} viestiä)".format(thread.name, prev_time.strftime("%Y-%m-%d %H:%M:%S"), n_deleted))
 
         except Exception as e:
             # Send the error message to the admin user as a DM
@@ -128,12 +123,12 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, db_name, db_user, db_password, admin_user_id, api):
+    def __init__(self, guild_id, bot_channel_id, db_name, db_user, db_password, admin_user_id, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
         self.jobs = dict() # channel id -> job
-        self.log_channel_name = "bottikomennot" # todo: configiin?
+        self.bot_channel_id = bot_channel_id
         self.admin_user_id = admin_user_id
         self.guild_id = guild_id
         self.api = api
@@ -167,7 +162,7 @@ class MyBot:
         if channel_id in self.jobs:
             self.jobs[channel_id].remove() # Terminate existing job
 
-        self.jobs[channel_id] = self.sched.add_job(self.autodelete.run, 'interval', (self.api, delete_older_than_minutes, channel_id, self.log_channel_name, self.guild_id, self.admin_user_id), minutes=callback_interval_minutes)
+        self.jobs[channel_id] = self.sched.add_job(self.autodelete.run, 'interval', (self.api, delete_older_than_minutes, channel_id, self.bot_channel_id, self.guild_id, self.admin_user_id), minutes=callback_interval_minutes)
 
     def startup(self):
         print("Adding all jobs and starting the scheduler.")

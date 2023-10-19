@@ -68,6 +68,15 @@ def open_database(db_name, username, password):
 
     cursor.execute(midnight_winners)
     
+    nicknames_table = """
+    CREATE TABLE IF NOT EXISTS nicknames (
+        user_id BIGINT UNSIGNED PRIMARY KEY,
+        nick VARCHAR(255)
+    )
+    """
+
+    cursor.execute(nicknames_table)
+
     database_connection.commit()
 
     return database_connection
@@ -329,6 +338,11 @@ class MyBot:
             return user.global_name
         
         return user.name
+    
+    def update_nickname(self, user):
+        cursor = self.database_connection.cursor()
+        cursor.execute("REPLACE INTO nicknames (user_id, nick) VALUES (%s, %s)", [user.id, self.get_guild_display_name(user)])
+        self.database_connection.commit()
         
     async def process_message(self, message):
 
@@ -336,6 +350,7 @@ class MyBot:
             await message.add_reaction('🏆')
 
         self.increment_todays_message_count(message.author.id)
+        self.update_nickname(message.author)
 
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)

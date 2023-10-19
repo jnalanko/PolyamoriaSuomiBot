@@ -56,8 +56,8 @@ async def on_message(message):
     mybot = instances[message.guild.id]
     await mybot.process_message(message)
 
-@bot.slash_command(guild_ids=guild_ids, name="midnight-leaderboard", description="Midnight leaderboard")
-async def midnight_leaderboard(ctx):
-    await instances[ctx.guild_id].midnight_leaderboard_command(ctx)
+@bot.slash_command(guild_ids=guild_ids, name="midnight-winners", description="Midnight winners")
+async def midnight_winners(ctx):
+    await instances[ctx.guild_id].midnight_winners_command(ctx)
 
 bot.run(config["token"])

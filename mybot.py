@@ -313,12 +313,12 @@ class MyBot:
     
         return False
     
-    async def midnight_leaderboard_command(self, ctx):
+    async def midnight_winners_command(self, ctx):
         cursor = self.database_connection.cursor()
         cursor.execute("SELECT user_id, date FROM midnight_winners")
         winners = cursor.fetchall()
         lines = []
-        lines.append("**Midnight leaderboard**")
+        lines.append("**Midnight Winners**")
         wincounts = defaultdict(int)
         for (user_id, date) in winners:
             wincounts[user_id] += 1

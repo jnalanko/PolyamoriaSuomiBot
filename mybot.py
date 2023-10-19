@@ -40,10 +40,10 @@ def open_database(db_name, username, password):
     
     create_message_counts_table = """
     CREATE TABLE IF NOT EXISTS message_counts (
-        username VARCHAR(255),
+        user_id BIGINT UNSIGNED,
         date DATE,
         count INT,
-        PRIMARY KEY (username, date)
+        PRIMARY KEY (user_id, date)
     )
     """
 
@@ -212,12 +212,12 @@ class MyBot:
         
         return "\n".join(lines)
         
-    def increment_todays_message_count(self, username):
+    def increment_todays_message_count(self, user_id):
 
         cursor = self.database_connection.cursor()
 
         # Create a new counter or increment existing
-        cursor.execute("INSERT INTO message_counts (username, date, count) VALUES (%s, CURDATE(), 1) ON DUPLICATE KEY UPDATE count = count + 1;", [username])
+        cursor.execute("INSERT INTO message_counts (user_id, date, count) VALUES (%s, CURDATE(), 1) ON DUPLICATE KEY UPDATE count = count + 1;", [user_id])
 
         self.database_connection.commit()
 
@@ -335,7 +335,7 @@ class MyBot:
         if self.check_midnight_winner(message):
             await message.add_reaction('🏆')
 
-        self.increment_todays_message_count(message.author.name)
+        self.increment_todays_message_count(message.author.id)
 
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)

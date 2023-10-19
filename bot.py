@@ -15,7 +15,8 @@ this.running = False
 
 yaml_filename = "config_local.yaml"
 config = yaml.safe_load(open(yaml_filename))
-print("Config config:", config)
+guild_ids = list(config["instances"].keys())
+print("Config:", config)
 
 instances = dict() # Guild id -> MyBot object
 
@@ -56,7 +57,7 @@ async def on_message(message):
     mybot = instances[message.guild.id]
     await mybot.process_message(message)
 
-@bot.slash_command(guild_ids=list(instances.keys()), name="midnight-leaderboard", description="Midnight leaderboard")
+@bot.slash_command(guild_ids=guild_ids, name="midnight-leaderboard", description="Midnight leaderboard")
 async def midnight_leaderboard(ctx):
     await instances[ctx.guild_id].midnight_leaderboard_command(ctx)
 

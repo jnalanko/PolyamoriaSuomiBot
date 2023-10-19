@@ -314,7 +314,6 @@ class MyBot:
         return False
     
     async def midnight_leaderboard_command(self, ctx):
-        guild = await self.api.fetch_guild(self.guild_id)
         cursor = self.database_connection.cursor()
         cursor.execute("SELECT user_id, date FROM midnight_winners")
         winners = cursor.fetchall()
@@ -325,7 +324,7 @@ class MyBot:
             wincounts[user_id] += 1
         pairs = [(wincounts[user_id], user_id) for user_id in wincounts]
         for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
-            nick = self.get_guild_display_name(await guild.fetch_member(user_id))
+            nick = self.fetch_nickname_from_db(user_id)
             lines.append("**{}**. **{}**: {} × 🏆".format(i+1, nick, wins))
         await ctx.respond("\n".join(lines))
 
@@ -338,6 +337,14 @@ class MyBot:
             return user.global_name
         
         return user.name
+    
+    def fetch_nickname_from_db(self, user_id):
+        cursor = self.database_connection.cursor()
+        cursor.execute("SELECT nick FROM nicknames WHERE user_id = %s", [user_id])
+        rows = cursor.fetchall()
+        if len(rows) == 0 or len(rows[0]) == 0:
+            return None
+        return rows[0][0]
     
     def update_nickname(self, user):
         cursor = self.database_connection.cursor()

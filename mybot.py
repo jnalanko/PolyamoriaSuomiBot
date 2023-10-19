@@ -62,7 +62,7 @@ def open_database(db_name, username, password):
     midnight_winners = """
     CREATE TABLE IF NOT EXISTS midnight_winners (
         date DATE PRIMARY KEY,
-        username VARCHAR(255)
+        user_id BIGINT UNSIGNED
     )
     """
 
@@ -297,7 +297,7 @@ class MyBot:
             if len(cursor.fetchall()) > 0:
                 return # Already have a winner for today
             
-            cursor.execute("INSERT INTO midnight_winners (date, username) VALUES (%s, %s)", [helsinki_date, message.author.name])
+            cursor.execute("INSERT INTO midnight_winners (date, user_id) VALUES (%s, %s)", [helsinki_date, message.author.id])
             
             self.database_connection.commit()
             return True
@@ -305,28 +305,35 @@ class MyBot:
         return False
     
     async def midnight_leaderboard_command(self, ctx):
+        guild = await self.api.fetch_guild(self.guild_id)
         cursor = self.database_connection.cursor()
-        cursor.execute("SELECT username, date FROM midnight_winners")
+        cursor.execute("SELECT user_id, date FROM midnight_winners")
         winners = cursor.fetchall()
         lines = []
         lines.append("**Midnight leaderboard**")
         wincounts = defaultdict(int)
-        for (username, date) in winners:
-            wincounts[username] += 1
-        pairs = [(wincounts[username], username) for username in wincounts]
-        for i, (wins, username) in enumerate(sorted(pairs)[::-1]): # In descending order
-            lines.append("**{}**. **{}**: {} × 🏆".format(i+1, username, wins))
+        for (user_id, date) in winners:
+            wincounts[user_id] += 1
+        pairs = [(wincounts[user_id], user_id) for user_id in wincounts]
+        for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
+            nick = self.get_guild_display_name(await guild.fetch_member(user_id))
+            lines.append("**{}**. **{}**: {} × 🏆".format(i+1, nick, wins))
         await ctx.respond("\n".join(lines))
+
+    def get_guild_display_name(self, user):
+        # nick is the server-specific nickname, if set.
+        # global_name is the global display name
+        if user.nick != None:
+            return user.nick
+        if user.global_name != None:
+            return user.global_name
+        
+        return user.name
         
     async def process_message(self, message):
 
         if self.check_midnight_winner(message):
             await message.add_reaction('🏆')
-
-        #debug_guild = await self.api.fetch_guild(self.guild_id)
-        #debug_member = await debug_guild.fetch_member(message.author.id)  
-        #debug = debug_member.display_name
-        #print("Debug:", debug_member.nick)
 
         self.increment_todays_message_count(message.author.name)
 

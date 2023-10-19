@@ -50,8 +50,7 @@ async def on_message(message):
         return # DM?
 
     if not message.guild.id in instances:
-        admin = config["master_admin_user_id"]
-        await send_dm(bot, admin, "Got message from guild {} but no instance defined for that guild".format(message.guild.id))
+        print("Got message from guild {} but no instance defined for that guild".format(message.guild.id))
         return 
         
     mybot = instances[message.guild.id]

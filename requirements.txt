@@ -1,4 +1,4 @@
-py-cord-dev >= 2.5.0
+py-cord-dev == 2.5.0 # Switch to just py-cord when 2.5 comes out
 pyyaml >= 5.4.1
 apscheduler == 3.8.0
 mysql-connector-python >= 8.1.0

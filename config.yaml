@@ -1,11 +1,15 @@
 instances:
   guild id: # Guild integer id without quotes
     admin_user_id: # Error messages related to this guild will be DM'd to this user id (integer)
+    bot_channel_id:
+    midnight_channel_id:
     db_name: 
     db_password: 
     db_user: 
   guild id: # Guild integer id without quotes
     admin_user_id: # Error messages related to this guild will be DM'd to this user id (integer)
+    bot_channel_id:
+    midnight_channel_id:
     db_name: 
     db_password: 
     db_user: 

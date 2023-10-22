@@ -158,7 +158,7 @@ class MyBot:
         self.api = api
         self.database_connection = open_database(db_name, db_user, db_password)
         self.number_of_message_times_to_remember = 5 # Todo: to config
-        
+    
     # If no job is yet active, creates a new job
     def set_autodel(self, channel_id, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
 
@@ -313,6 +313,25 @@ class MyBot:
     
         return False
     
+
+    async def list_threads_command(self, ctx):
+        lines = []
+        n_threads = 0
+        for channel in ctx.guild.channels:
+            if not hasattr(channel, "threads"):
+                continue
+            all_threads = channel.threads
+            
+            #async for T in channel.archived_threads(limit=None):
+            #    all_threads.append(T)
+            for thread in all_threads:
+                n_threads += 1
+                lines.append("<#{}>".format(thread.id))
+        
+        await ctx.respond("**Threads** ({} total)".format(n_threads))
+        for i in range(0, len(lines), 50):
+            await ctx.send_followup("\n".join(lines[i:i+50]))
+        
     async def midnight_winners_command(self, ctx):
         cursor = self.database_connection.cursor()
         cursor.execute("SELECT user_id, date FROM midnight_winners")

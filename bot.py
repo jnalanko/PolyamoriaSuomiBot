@@ -60,4 +60,10 @@ async def on_message(message):
 async def midnight_winners(ctx):
     await instances[ctx.guild_id].midnight_winners_command(ctx)
 
+@bot.slash_command(guild_ids=guild_ids, name="threads", description="List of threads")
+async def midnight_winners(ctx):
+    await instances[ctx.guild_id].list_threads_command(ctx)
+
+
+
 bot.run(config["token"])

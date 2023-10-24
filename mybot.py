@@ -296,9 +296,15 @@ class MyBot:
         helsinki_time = message.created_at.astimezone(ZoneInfo("Europe/Helsinki"))
         return helsinki_time.date()
 
+    def contains_midnight_phrase(self, message) -> bool:
+        # Use regexp for matching "hyv*ke[ks|sk]iyö*"?
+        midnight_strings = ["happy midnight", "hyvää keskiyötä", "hyvää keksiyötä"]
+        message_lower = message.content.lower()
+        return any((s in message_lower for s in midnight_strings))
+
     def check_midnight_winner(self, message):
         helsinki_date = self.message_date_in_helsinki(message)
-        if message.channel.id == self.midnight_channel_id and "happy midnight" in message.content.lower():
+        if message.channel.id == self.midnight_channel_id and self.contains_midnight_phrase(message):
             cursor = self.database_connection.cursor()
             
             # Check if there exists a column with the current date

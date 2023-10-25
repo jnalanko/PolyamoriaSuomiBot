@@ -16,3 +16,17 @@ instances:
 
 token: Get this from the Discord developer portal
 master_admin_user_id: # Error messages not specific to any guild will be DM'd to this user id (integer)
+
+
+# Example:
+# instances:
+#   123456789012345678: # Guild integer id without quotes
+#     admin_user_id: 987654321098765432 # Error messages related to this guild will be DM'd to this user id (integer)
+#     bot_channel_id: 1231231231231231231
+#     midnight_channel_id: 4564564564564564564
+#     db_name: my_db
+#     db_password: Very-Secure-Password123!
+#     db_user: my_db_user
+#
+# token: NOTREAL.X00o05XB9aNcYTgU7S3H6rKi6QRfaNI7qVZ0Kq5wYNKA1pLeIRmb3Hk0jzTd3XemSk8
+# master_admin_user_id: 987654321098765432 # Error messages not specific to any guild will be DM'd to this user id (integer)

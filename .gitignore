@@ -3,3 +3,5 @@ config_local.yaml
 
 # Pycharm conf dir
 .idea/
+
+venv/

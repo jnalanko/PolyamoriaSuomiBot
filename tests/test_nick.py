@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from nick import update_nickname_cache, fetch_nickname_from_cache, get_guild_display_name
 
 
-class TestNickCache(TestCase):
+class TestNick(TestCase):
     def test_update_nickname_from_global_name(self):
         user_id = 123
         user_global_name = "Erkki"

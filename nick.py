@@ -13,12 +13,12 @@ def update_nickname_cache(user: Union[discord.Member, discord.abc.User]):
     __NICK_CACHE[user.id] = get_guild_display_name(user)
 
 
-def get_guild_display_name(user: Union[discord.Member, discord.abc.User]):
+def get_guild_display_name(user: Union[discord.Member, discord.abc.User]) -> str:
     return (
             # 1: return nick if set (server-specific nickname)
-            getattr(user, 'nick', None) or
+            getattr(user, 'nick', '') or
             # 2: return global_name if set (global display name)
-            getattr(user, 'global_name', None) or
+            getattr(user, 'global_name', '') or
             # 3: return name (user's username - this should always exist)
             # 4: return 'unknown name' just in case getting everything else fails
             getattr(user, 'name', 'unknown name')

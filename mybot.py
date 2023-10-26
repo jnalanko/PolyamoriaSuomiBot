@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from midnight import contains_midnight_phrase
+from nick import update_nickname_cache, fetch_nickname_from_cache
 from send_dm import send_dm
 
 import mysql.connector
@@ -344,40 +345,17 @@ class MyBot:
             wincounts[user_id] += 1
         pairs = [(wincounts[user_id], user_id) for user_id in wincounts]
         for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
-            nick = self.fetch_nickname_from_db(user_id)
+            nick = fetch_nickname_from_cache(user_id)
             lines.append("**{}**. **{}**: {} × 🏆".format(i+1, nick, wins))
         await ctx.respond("\n".join(lines))
 
-    def get_guild_display_name(self, user):
-        # nick is the server-specific nickname, if set.
-        # global_name is the global display name
-        if user.nick != None:
-            return user.nick
-        if user.global_name != None:
-            return user.global_name
-        
-        return user.name
-    
-    def fetch_nickname_from_db(self, user_id):
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT nick FROM nicknames WHERE user_id = %s", [user_id])
-        rows = cursor.fetchall()
-        if len(rows) == 0 or len(rows[0]) == 0:
-            return None
-        return rows[0][0]
-    
-    def update_nickname(self, user):
-        cursor = self.database_connection.cursor()
-        cursor.execute("REPLACE INTO nicknames (user_id, nick) VALUES (%s, %s)", [user.id, self.get_guild_display_name(user)])
-        self.database_connection.commit()
-        
     async def process_message(self, message):
 
         if self.check_midnight_winner(message):
             await message.add_reaction('🏆')
 
         #self.increment_todays_message_count(message.author.id)
-        self.update_nickname(message.author)
+        update_nickname_cache(message.author)
 
         if message.channel.id == self.bot_channel_id:
             await self.handle_bot_channel_message(message)

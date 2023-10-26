@@ -1,8 +1,8 @@
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 import discord
 
-__NICK_CACHE: dict[int, str] = {}
+__NICK_CACHE: Dict[int, str] = {}
 
 
 def fetch_nickname_from_cache(user_id: int) -> Optional[str]:

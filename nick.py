@@ -31,3 +31,15 @@ def get_guild_display_name(user: Union[discord.Member, discord.abc.User]) -> str
         # 4: return 'unknown name' just in case getting everything else fails
         getattr(user, 'name', 'unknown name')
     )
+
+
+def get_nick(user_id: int, guild: discord.Guild) -> str:
+    from_cache = fetch_nickname_from_cache(user_id)
+    if from_cache is not None:
+        return from_cache
+    member: Optional[discord.Member] = guild.get_member(user_id)
+    if member is None:
+        return 'unknown name'
+    nick = get_guild_display_name(member)
+    update_nickname_cache(member)
+    return nick

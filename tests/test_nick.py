@@ -1,7 +1,13 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from nick import update_nickname_cache, fetch_nickname_from_cache, get_guild_display_name, clear_nickname_cache
+from nick import (
+    update_nickname_cache,
+    fetch_nickname_from_cache,
+    get_guild_display_name,
+    clear_nickname_cache,
+    get_nick,
+)
 
 
 class TestNick(TestCase):
@@ -48,3 +54,30 @@ class TestNick(TestCase):
         user_global_name = 'Abstract User'
         no_nick_user = NoNickMock(global_name=user_global_name)
         self.assertEqual(get_guild_display_name(no_nick_user), user_global_name)
+
+    def test_get_nick_cache_hit(self):
+        user_id = 999
+        user_global_name = "CacheHitUser"
+        user_nick = None
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        update_nickname_cache(mock_user)
+        self.assertEqual(get_nick(user_id, guild=Mock()), user_global_name)
+
+    def test_get_nick_cache_miss(self):
+        user_id = 888
+        user_global_name = "CacheMissUser"
+        user_nick = None
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        mock_guild = Mock()
+        mock_guild.get_member = Mock(return_value=mock_user)
+        self.assertEqual(get_nick(user_id, guild=mock_guild), user_global_name)
+
+    def test_get_nick_cache_miss_updates_cache(self):
+        user_id = 777
+        user_global_name = "CacheMissUpdateUser"
+        user_nick = None
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        mock_guild = Mock()
+        mock_guild.get_member = Mock(return_value=mock_user)
+        get_nick(user_id, guild=mock_guild)
+        self.assertEqual(fetch_nickname_from_cache(user_id), user_global_name)

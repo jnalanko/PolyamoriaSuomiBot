@@ -1,10 +1,13 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from nick import update_nickname_cache, fetch_nickname_from_cache, get_guild_display_name
+from nick import update_nickname_cache, fetch_nickname_from_cache, get_guild_display_name, clear_nickname_cache
 
 
 class TestNick(TestCase):
+    def setUp(self):
+        clear_nickname_cache()
+
     def test_update_nickname_from_global_name(self):
         user_id = 123
         user_global_name = "Erkki"
@@ -23,6 +26,14 @@ class TestNick(TestCase):
 
     def test_fetch_nonexistent_nickname(self):
         self.assertEqual(fetch_nickname_from_cache(99999), None)
+
+    def test_clear_cache(self):
+        user_id = 789
+        user_global_name = "CacheGuy"
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=None)
+        update_nickname_cache(mock_user)
+        clear_nickname_cache()
+        self.assertIsNone(fetch_nickname_from_cache(user_id))
 
     def test_get_guild_display_name_no_nick_attr(self):
         # Create a mock user that doesn't have 'nick'.

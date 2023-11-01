@@ -1,10 +1,10 @@
 import sys
 
 import discord
-import yaml
 import logging
+
+from config_loader import load_config, InstanceConfig, Config
 from mybot import MyBot
-from send_dm import send_dm
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,10 +13,8 @@ logging.basicConfig(level=logging.INFO)
 this = sys.modules[__name__]
 this.running = False
 
-yaml_filename = "config_local.yaml"
-config = yaml.safe_load(open(yaml_filename))
-guild_ids = list(config["instances"].keys())
-print("Config:", config)
+config: Config = load_config()
+guild_ids = list(config.instances.keys())
 
 instances = dict() # Guild id -> MyBot object
 
@@ -34,9 +32,19 @@ async def on_ready():
     else: this.running = True
 
     print("Client started up.", flush=True)
-    for guild_id in config["instances"]:
-        cfg = config["instances"][guild_id]
-        instance = MyBot(guild_id, cfg["bot_channel_id"], cfg["midnight_channel_id"], cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], bot)
+    for guild_id in config.instances:
+        cfg: InstanceConfig = config.instances[guild_id]
+        instance = MyBot(
+            guild_id,
+            cfg.bot_channel_id,
+            cfg.midnight_channel_id,
+            cfg.db_host,
+            cfg.db_name,
+            cfg.db_user,
+            cfg.db_password,
+            cfg.admin_user_id,
+            bot
+        )
 
         instance.startup()
         instances[guild_id] = instance
@@ -66,4 +74,4 @@ async def threads(ctx):
 
 
 
-bot.run(config["token"])
+bot.run(config.token)

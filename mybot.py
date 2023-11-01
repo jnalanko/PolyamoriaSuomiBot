@@ -24,10 +24,10 @@ from multiprocessing                import Process
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
 
-def open_database(db_name, username, password):
+def open_database(db_host, db_name, username, password):
 
     db_config = {
-        "host": "localhost",
+        "host": db_host,
         "user": username,
         "password": password,
     }
@@ -148,7 +148,7 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, db_name, db_user, db_password, admin_user_id, api):
+    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, db_host, db_name, db_user, db_password, admin_user_id, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
@@ -158,7 +158,7 @@ class MyBot:
         self.midnight_channel_id = midnight_channel_id
         self.guild_id = guild_id
         self.api = api
-        self.database_connection = open_database(db_name, db_user, db_password)
+        self.database_connection = open_database(db_host, db_name, db_user, db_password)
         self.number_of_message_times_to_remember = 5 # Todo: to config
     
     # If no job is yet active, creates a new job

@@ -16,20 +16,24 @@ this.running = False
 config: Config = load_config()
 guild_ids = list(config.instances.keys())
 
-instances = dict() # Guild id -> MyBot object
+instances = dict()  # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
 # open_database(config["db_name"], config["db_user"], config["db_password"])
-bot = discord.Bot(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
+bot = discord.Bot(
+    intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
+
 
 # Define event handlers for the client
 # on_ready may be called multiple times in the event of a reconnect,
 # hence the running flag
 @bot.event
 async def on_ready():
-    if this.running: return
-    else: this.running = True
+    if this.running:
+        return
+    else:
+        this.running = True
 
     print("Client started up.", flush=True)
     for guild_id in config.instances:
@@ -38,10 +42,10 @@ async def on_ready():
             guild_id,
             cfg.bot_channel_id,
             cfg.midnight_channel_id,
-            cfg.db_host,
+            config.db_host,
             cfg.db_name,
-            cfg.db_user,
-            cfg.db_password,
+            config.db_user,
+            config.db_password,
             cfg.admin_user_id,
             bot
         )
@@ -51,27 +55,29 @@ async def on_ready():
 
     print(instances)
 
+
 @bot.event
 async def on_message(message):
     print("onmessage", message.content)
-    if message.guild == None:
-        return # DM?
+    if message.guild is None:
+        return  # DM?
 
-    if not message.guild.id in instances:
+    if message.guild.id not in instances:
         print("Got message from guild {} but no instance defined for that guild".format(message.guild.id))
-        return 
-        
+        return
+
     mybot = instances[message.guild.id]
     await mybot.process_message(message)
+
 
 @bot.slash_command(guild_ids=guild_ids, name="midnight-winners", description="Midnight winners")
 async def midnight_winners(ctx):
     await instances[ctx.guild_id].midnight_winners_command(ctx)
 
+
 @bot.slash_command(guild_ids=guild_ids, name="threads", description="List of threads")
 async def threads(ctx):
     await instances[ctx.guild_id].list_threads_command(ctx)
-
 
 
 bot.run(config.token)

@@ -1,28 +1,48 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from nick import update_nickname_cache, fetch_nickname_from_cache, get_guild_display_name
+from nick import (
+    update_nickname_cache,
+    fetch_nickname_from_cache,
+    get_guild_display_name,
+    clear_nickname_cache,
+    get_nick,
+)
 
 
 class TestNick(TestCase):
+    def setUp(self):
+        clear_nickname_cache()
+
     def test_update_nickname_from_global_name(self):
         user_id = 123
         user_global_name = "Erkki"
         user_nick = None
+        guild_id = 678678
         mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
-        update_nickname_cache(mock_user)
-        self.assertEqual(fetch_nickname_from_cache(user_id), user_global_name)
+        update_nickname_cache(mock_user, guild_id=guild_id)
+        self.assertEqual(fetch_nickname_from_cache(user_id, guild_id=guild_id), user_global_name)
 
     def test_update_nickname_from_nick(self):
         user_id = 456
         user_global_name = "Pentti"
         user_nick = "PenttiOnlyOnThisServer"
+        guild_id = 35353535
         mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
-        update_nickname_cache(mock_user)
-        self.assertEqual(fetch_nickname_from_cache(user_id), user_nick)
+        update_nickname_cache(mock_user, guild_id=guild_id)
+        self.assertEqual(fetch_nickname_from_cache(user_id, guild_id=guild_id), user_nick)
 
     def test_fetch_nonexistent_nickname(self):
-        self.assertEqual(fetch_nickname_from_cache(99999), None)
+        self.assertEqual(fetch_nickname_from_cache(99999, guild_id=33333333), None)
+
+    def test_clear_cache(self):
+        user_id = 789
+        user_global_name = "CacheGuy"
+        guild_id = 987987
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=None)
+        update_nickname_cache(mock_user, guild_id=guild_id)
+        clear_nickname_cache()
+        self.assertIsNone(fetch_nickname_from_cache(user_id, guild_id=guild_id))
 
     def test_get_guild_display_name_no_nick_attr(self):
         # Create a mock user that doesn't have 'nick'.
@@ -37,3 +57,35 @@ class TestNick(TestCase):
         user_global_name = 'Abstract User'
         no_nick_user = NoNickMock(global_name=user_global_name)
         self.assertEqual(get_guild_display_name(no_nick_user), user_global_name)
+
+    def test_get_nick_cache_hit(self):
+        user_id = 999
+        user_global_name = "CacheHitUser"
+        user_nick = None
+        guild_id = 123123
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        mock_guild = Mock(id=guild_id)
+        update_nickname_cache(mock_user, guild_id=guild_id)
+        nick = get_nick(user_id, guild=mock_guild)
+        # should have gotten the nick from cache
+        mock_guild.get_member.assert_not_called()
+        self.assertEqual(nick, user_global_name)
+
+    def test_get_nick_cache_miss(self):
+        user_id = 888
+        user_global_name = "CacheMissUser"
+        user_nick = None
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        mock_guild = Mock()
+        mock_guild.get_member = Mock(return_value=mock_user)
+        self.assertEqual(get_nick(user_id, guild=mock_guild), user_global_name)
+
+    def test_get_nick_cache_miss_updates_cache(self):
+        user_id = 777
+        user_global_name = "CacheMissUpdateUser"
+        user_nick = None
+        mock_user = Mock(id=user_id, global_name=user_global_name, nick=user_nick)
+        mock_guild = Mock(id=456456)
+        mock_guild.get_member = Mock(return_value=mock_user)
+        get_nick(user_id, guild=mock_guild)
+        self.assertEqual(fetch_nickname_from_cache(user_id, guild_id=mock_guild.id), user_global_name)

@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from midnight import contains_midnight_phrase
-from nick import update_nickname_cache, fetch_nickname_from_cache
+from nick import update_nickname_cache, get_nick
 from send_dm import send_dm
 
 import mysql.connector
@@ -345,7 +345,7 @@ class MyBot:
             wincounts[user_id] += 1
         pairs = [(wincounts[user_id], user_id) for user_id in wincounts]
         for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
-            nick = fetch_nickname_from_cache(user_id)
+            nick = get_nick(user_id, guild=ctx.guild)
             lines.append("**{}**. **{}**: {} × 🏆".format(i+1, nick, wins))
         await ctx.respond("\n".join(lines))
 

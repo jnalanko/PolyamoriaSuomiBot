@@ -69,15 +69,6 @@ def open_database(db_name, username, password):
     """
 
     cursor.execute(midnight_winners)
-    
-    nicknames_table = """
-    CREATE TABLE IF NOT EXISTS nicknames (
-        user_id BIGINT UNSIGNED PRIMARY KEY,
-        nick VARCHAR(255)
-    )
-    """
-
-    cursor.execute(nicknames_table)
 
     database_connection.commit()
 

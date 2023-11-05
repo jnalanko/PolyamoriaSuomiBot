@@ -62,7 +62,8 @@ async def midnight_winners(ctx):
 
 @bot.slash_command(guild_ids=guild_ids, name="threads", description="List of threads")
 async def threads(ctx):
-    await instances[ctx.guild_id].list_threads_command(ctx)
+    #await instances[ctx.guild_id].list_threads_command(ctx)
+    pass
 
 
 

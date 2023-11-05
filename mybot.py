@@ -345,7 +345,7 @@ class MyBot:
         if self.check_midnight_winner(message):
             await message.add_reaction('🏆')
 
-        #self.increment_todays_message_count(message.author.id)
+        self.increment_todays_message_count(message.author.id)
         update_nickname_cache(message.author, self.guild_id)
 
         if message.channel.id == self.bot_channel_id:

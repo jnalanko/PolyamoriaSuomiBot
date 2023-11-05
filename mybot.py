@@ -162,6 +162,7 @@ class MyBot:
         
         # Create a job (terminates existing job if exists)
         self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
+        self.database_connection.commit()
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_id):

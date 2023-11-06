@@ -5,7 +5,6 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
     """Connection pool handles reconnections automatically"""
     db_config = {
         "host": "localhost",
-        "database": db_name,
         "user": username,
         "password": password,
     }
@@ -16,6 +15,16 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
     )
 
     _create_db_if_needed(pool=connection_pool, db_name=db_name)
+
+    # Add "database" to config after it's been created
+    db_config_with_database = {
+        "host": "localhost",
+        "database": db_name,
+        "user": username,
+        "password": password,
+    }
+    connection_pool.set_config(**db_config_with_database)
+
     _create_tables_if_needed(pool=connection_pool)
 
     return connection_pool

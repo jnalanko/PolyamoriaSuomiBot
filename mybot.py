@@ -1,19 +1,9 @@
-import sys
-from typing import Union
-
-import discord
-import yaml
-import logging
-import pytz
-import random
-
 from collections import defaultdict
 
 from datetime import datetime, timedelta, timezone
 
 from zoneinfo import ZoneInfo
 
-from mysql.connector import MySQLConnection
 from mysql.connector.pooling import MySQLConnectionPool
 
 from database import open_database
@@ -21,10 +11,7 @@ from midnight import contains_midnight_phrase
 from nick import update_nickname_cache, get_nick
 from send_dm import send_dm
 
-import mysql.connector
-
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from multiprocessing                import Process
 
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll

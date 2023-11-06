@@ -6,7 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      # Note: this throwaway password is only used for the testing database
+      # Note: this throwaway password is only used for the testing database in GitHub Actions
       TEST_MARIADB_ROOT_PASSWORD: test-mariadb-pass
 
     services:

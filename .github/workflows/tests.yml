@@ -13,11 +13,11 @@ jobs:
       mariadb:
         image: mariadb:11.1
         env:
-          TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+          MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping --password=${TEST_MARIADB_ROOT_PASSWORD}"
+          --health-cmd="mysqladmin ping --password=${MARIADB_ROOT_PASSWORD}"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5

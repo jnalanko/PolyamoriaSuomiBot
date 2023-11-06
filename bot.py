@@ -42,13 +42,13 @@ async def on_ready():
     print(instances)
 
 @bot.event
-async def on_message(message):
-    print("onmessage", message.content)
-    if message.guild == None:
-        return # DM?
+async def on_message(message: discord.Message):
+    logging.info(f"on_message {message.id}")
+    if message.guild is None:
+        return  # DM?
 
-    if not message.guild.id in instances:
-        print("Got message from guild {} but no instance defined for that guild".format(message.guild.id))
+    if message.guild.id not in instances:
+        logging.info(f"Got message from guild {message.guild.id} but no instance defined for that guild")
         return 
         
     mybot = instances[message.guild.id]

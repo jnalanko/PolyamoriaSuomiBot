@@ -6,9 +6,10 @@ from mysql.connector.pooling import MySQLConnectionPool
 from database import create_db_if_needed
 
 
-class TestDatabase(unittest.TestCase):
+class TestDatabaseCreation(unittest.TestCase):
     def setUp(self):
-        self.pool = MySQLConnectionPool(pool_name="mypool",
+        self.assertIsNotNone(os.getenv("TEST_MARIADB_ROOT_PASSWORD"), "TEST_MARIADB_ROOT_PASSWORD must be set")
+        self.pool = MySQLConnectionPool(pool_name="test_pool",
                                         pool_size=1,
                                         host="127.0.0.1",
                                         user="root",

@@ -4,7 +4,6 @@ import discord
 import yaml
 import logging
 from mybot import MyBot
-from send_dm import send_dm
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,11 +17,10 @@ config = yaml.safe_load(open(yaml_filename))
 guild_ids = list(config["instances"].keys())
 print("Config:", config)
 
-instances = dict() # Guild id -> MyBot object
+instances = dict()  # Guild id -> MyBot object
 
 # Initialize the client
 print("Starting up...")
-# open_database(config["db_name"], config["db_user"], config["db_password"])
 bot = discord.Bot(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
 
 # Define event handlers for the client

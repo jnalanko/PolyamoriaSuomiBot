@@ -1,0 +1,49 @@
+name: Python tests
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # Note: this throwaway password is only used for the testing database in GitHub Actions
+      TEST_MARIADB_ROOT_PASSWORD: test-mariadb-pass
+
+    services:
+      mariadb:
+        image: mariadb:11.1
+        env:
+          MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+        ports:
+          - 3306:3306
+
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Wait for db
+      env:
+        TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+      run: |
+        until mysqladmin ping -h "127.0.0.1" --password=${TEST_MARIADB_ROOT_PASSWORD} --silent; do
+          sleep 1
+        done
+
+    - name: Run tests
+      env:
+        TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+      run: |
+        python -m unittest discover

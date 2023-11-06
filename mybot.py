@@ -1,79 +1,22 @@
-import sys
-
-import discord
-import yaml
-import logging
-import pytz
-import random
-
 from collections import defaultdict
 
 from datetime import datetime, timedelta, timezone
 
 from zoneinfo import ZoneInfo
 
+from mysql.connector.pooling import MySQLConnectionPool
+
+from database import open_database
 from midnight import contains_midnight_phrase
 from nick import update_nickname_cache, get_nick
 from send_dm import send_dm
 
-import mysql.connector
-
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from multiprocessing                import Process
 
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
 
-def open_database(db_name, username, password):
 
-    db_config = {
-        "host": "localhost",
-        "user": username,
-        "password": password,
-    }
-
-    database_connection = mysql.connector.connect(**db_config)
-    cursor = database_connection.cursor()
-
-    # cursor.execute does not support sanitized CREATE DATABASE queries.
-    # So we just trust our own config and plug in the database name directly.
-    cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
-    cursor.execute("USE {}".format(db_name))
-    
-    create_message_counts_table = """
-    CREATE TABLE IF NOT EXISTS message_counts (
-        user_id BIGINT UNSIGNED,
-        date DATE,
-        count INT,
-        PRIMARY KEY (user_id, date)
-    )
-    """
-
-    cursor.execute(create_message_counts_table)
-
-    create_autodelete_table = """
-    CREATE TABLE IF NOT EXISTS autodelete (
-        channel_id BIGINT UNSIGNED PRIMARY KEY,
-        callback_interval_minutes INT,
-        delete_older_than_minutes INT
-    )
-    """
-
-    cursor.execute(create_autodelete_table)
-
-    midnight_winners = """
-    CREATE TABLE IF NOT EXISTS midnight_winners (
-        date DATE PRIMARY KEY,
-        user_id BIGINT UNSIGNED
-    )
-    """
-
-    cursor.execute(midnight_winners)
-
-    database_connection.commit()
-
-    return database_connection
-    
 class AutoDeleteCallBack:
 
     # Returns whether the message was deleted
@@ -149,31 +92,32 @@ class MyBot:
         self.midnight_channel_id = midnight_channel_id
         self.guild_id = guild_id
         self.api = api
-        self.database_connection = open_database(db_name, db_user, db_password)
+        self.connection_pool: MySQLConnectionPool = open_database(db_name, db_user, db_password)
         self.number_of_message_times_to_remember = 5 # Todo: to config
     
     # If no job is yet active, creates a new job
     def set_autodel(self, channel_id, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
 
         # Check if autodelete is already active for the channel and if so, update config the values
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("REPLACE INTO autodelete (channel_id, callback_interval_minutes, delete_older_than_minutes) VALUES (%s, %s, %s)", [channel_id, callback_interval_minutes, delete_older_than_minutes])
 
-        cursor = self.database_connection.cursor()
-        cursor.execute("REPLACE INTO autodelete (channel_id, callback_interval_minutes, delete_older_than_minutes) VALUES (%s, %s, %s)", [channel_id, callback_interval_minutes, delete_older_than_minutes])
-        
-        # Create a job (terminates existing job if exists)
-        self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
-        self.database_connection.commit()
+            # Create a job (terminates existing job if exists)
+            self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
+            conn.commit()
 
     # Updates config and removes the affected job (if exists)
     def remove_autodel_from_channel(self, channel_id):
-        cursor = self.database_connection.cursor()
-        cursor.execute("DELETE FROM autodelete WHERE channel_id = %s", [channel_id])
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM autodelete WHERE channel_id = %s", [channel_id])
 
-        if channel_id in self.jobs: 
-            self.jobs[channel_id].remove()
-            del self.jobs[channel_id]
+            if channel_id in self.jobs:
+                self.jobs[channel_id].remove()
+                del self.jobs[channel_id]
 
-        self.database_connection.commit()
+            conn.commit()
 
     # Does not update config
     def create_job(self, channel_id, callback_interval_minutes, delete_older_than_minutes):
@@ -189,11 +133,12 @@ class MyBot:
 
     def add_all_jobs(self):
         print("Adding all jobs")
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM autodelete")
-        for (channel_id, callback_interval_minutes, delete_older_than_minutes) in cursor.fetchall():
-            print("Adding autodelete job for channel", channel_id)
-            self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM autodelete")
+            for (channel_id, callback_interval_minutes, delete_older_than_minutes) in cursor.fetchall():
+                print("Adding autodelete job for channel", channel_id)
+                self.create_job(channel_id, callback_interval_minutes, delete_older_than_minutes)
         print(self.jobs)
 
     def trigger_all_jobs_now(self):
@@ -206,23 +151,25 @@ class MyBot:
         lines = []
         lines.append("**Autodelete-asetukset**")
 
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM autodelete")
-        for row in cursor.fetchall():
-            channel_id, interval_minutes, delete_older_than_minutes = row
-            channel_name = self.api.get_channel(channel_id).name
-            lines.append("**#{}**: {:.2f} tunnin välein vähintään {:.2f} päivää vanhat viestit.".format(channel_name, interval_minutes/60, delete_older_than_minutes/(60*24)))
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM autodelete")
+            for row in cursor.fetchall():
+                channel_id, interval_minutes, delete_older_than_minutes = row
+                channel_name = self.api.get_channel(channel_id).name
+                lines.append("**#{}**: {:.2f} tunnin välein vähintään {:.2f} päivää vanhat viestit.".format(channel_name, interval_minutes/60, delete_older_than_minutes/(60*24)))
         
         return "\n".join(lines)
         
     def increment_todays_message_count(self, user_id):
 
-        cursor = self.database_connection.cursor()
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
 
-        # Create a new counter or increment existing
-        cursor.execute("INSERT INTO message_counts (user_id, date, count) VALUES (%s, CURDATE(), 1) ON DUPLICATE KEY UPDATE count = count + 1;", [user_id])
+            # Create a new counter or increment existing
+            cursor.execute("INSERT INTO message_counts (user_id, date, count) VALUES (%s, CURDATE(), 1) ON DUPLICATE KEY UPDATE count = count + 1;", [user_id])
 
-        self.database_connection.commit()
+            conn.commit()
 
     async def handle_bot_channel_message(self, message):
         if message.content.startswith("!"):
@@ -293,16 +240,17 @@ class MyBot:
     def check_midnight_winner(self, message):
         helsinki_date = self.message_date_in_helsinki(message)
         if message.channel.id == self.midnight_channel_id and contains_midnight_phrase(message.content):
-            cursor = self.database_connection.cursor()
-            
-            # Check if there exists a column with the current date
-            cursor.execute("SELECT * FROM midnight_winners WHERE date = %s", [helsinki_date])
-            if len(cursor.fetchall()) > 0:
-                return # Already have a winner for today
-            
-            cursor.execute("INSERT INTO midnight_winners (date, user_id) VALUES (%s, %s)", [helsinki_date, message.author.id])
-            
-            self.database_connection.commit()
+            with self.connection_pool.get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Check if there exists a column with the current date
+                cursor.execute("SELECT * FROM midnight_winners WHERE date = %s", [helsinki_date])
+                if len(cursor.fetchall()) > 0:
+                    return # Already have a winner for today
+
+                cursor.execute("INSERT INTO midnight_winners (date, user_id) VALUES (%s, %s)", [helsinki_date, message.author.id])
+
+                conn.commit()
             return True
     
         return False
@@ -327,9 +275,10 @@ class MyBot:
             await ctx.send_followup("\n".join(lines[i:i+50]))
         
     async def midnight_winners_command(self, ctx):
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT user_id, date FROM midnight_winners")
-        winners = cursor.fetchall()
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id, date FROM midnight_winners")
+            winners = cursor.fetchall()
         lines = []
         lines.append("**Midnight Winners**")
         wincounts = defaultdict(int)

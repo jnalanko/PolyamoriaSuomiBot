@@ -5,7 +5,7 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment:
+    env:
       # Note: this throwaway password is only used for the testing database
       TEST_MARIADB_ROOT_PASSWORD: test-mariadb-pass
 

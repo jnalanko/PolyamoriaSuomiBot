@@ -4,8 +4,23 @@ on: [push]
 
 jobs:
   test:
-
     runs-on: ubuntu-latest
+    environment:
+      # Note: this throwaway password is only used for the testing database
+      TEST_MARIADB_ROOT_PASSWORD: test-mariadb-pass
+
+    services:
+      mariadb:
+        image: mariadb:11.1
+        env:
+          TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --password=${TEST_MARIADB_ROOT_PASSWORD}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     strategy:
       matrix:
@@ -24,6 +39,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Wait for db
+      env:
+        TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
+      run: |
+        until mysqladmin ping -h "127.0.0.1" --password=${TEST_MARIADB_ROOT_PASSWORD} --silent; do
+          sleep 1
+        done
+
     - name: Run tests
+      env:
+        TEST_MARIADB_ROOT_PASSWORD: ${{ env.TEST_MARIADB_ROOT_PASSWORD }}
       run: |
         python -m unittest discover

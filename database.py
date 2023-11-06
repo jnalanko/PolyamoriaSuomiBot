@@ -14,7 +14,7 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
         **db_config
     )
 
-    _create_db_if_needed(pool=connection_pool, db_name=db_name)
+    create_db_if_needed(pool=connection_pool, db_name=db_name)
 
     # Add "database" to config after it's been created
     db_config_with_database = {
@@ -25,12 +25,12 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
     }
     connection_pool.set_config(**db_config_with_database)
 
-    _create_tables_if_needed(pool=connection_pool)
+    create_tables_if_needed(pool=connection_pool)
 
     return connection_pool
 
 
-def _create_db_if_needed(pool: MySQLConnectionPool, db_name: str):
+def create_db_if_needed(pool: MySQLConnectionPool, db_name: str):
     with pool.get_connection() as conn:
         cursor = conn.cursor()
 
@@ -39,7 +39,7 @@ def _create_db_if_needed(pool: MySQLConnectionPool, db_name: str):
         cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
 
 
-def _create_tables_if_needed(pool: MySQLConnectionPool):
+def create_tables_if_needed(pool: MySQLConnectionPool):
     with pool.get_connection() as conn:
         cursor = conn.cursor()
 

@@ -18,6 +18,8 @@ yaml_filename = "config_local.yaml"
 configs = yaml.safe_load(open(yaml_filename))
 guild_ids = list(configs["instances"].keys())
 logging.info(f"Config: {config.censor_config(configs)}")
+if configs.get('DEBUG'):
+    logging.info("Debug mode active - do not run in production!")
 
 instances = dict()  # Guild id -> MyBot object
 
@@ -45,7 +47,10 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    logging.info(f"on_message {message.id}")
+    if configs.get('DEBUG'):
+        logging.info(f"on_message {message.content}")
+    else:
+        logging.info(f"on_message {message.id}")
     if message.guild is None:
         return  # DM?
 

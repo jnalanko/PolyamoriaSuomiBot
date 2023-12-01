@@ -19,7 +19,7 @@ configs = yaml.safe_load(open(yaml_filename))
 guild_ids = list(configs["instances"].keys())
 logging.info(f"Config: {config.censor_config(configs)}")
 if configs.get('DEBUG'):
-    logging.info("Debug mode active - do not run in production!")
+    logging.warning("Debug mode active - do not run in production!")
 
 instances = dict()  # Guild id -> MyBot object
 

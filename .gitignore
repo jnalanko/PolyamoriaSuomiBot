@@ -1,5 +1,6 @@
 # Make sure the local settings aren't committed by accident
 config_local.yaml
+.env
 
 # Pycharm conf dir
 .idea/

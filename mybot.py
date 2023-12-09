@@ -291,8 +291,9 @@ class MyBot:
         await ctx.respond("\n".join(lines))
 
     async def process_message(self, message):
-
-        if self.check_midnight_winner(message):
+        now = datetime.now(ZoneInfo("Europe/Helsinki"))
+        
+        if now.hour == 0 and now.minute == 0 and self.check_midnight_winner(message):
             await message.add_reaction('🏆')
 
         self.increment_todays_message_count(message.author.id)

@@ -233,9 +233,11 @@ class MyBot:
             else:
                 await message.channel.send("Tuntematon komento: " + message.content.split()[0])
     
+    def message_datetime_in_helsinki(self, message):
+        return message.created_at.astimezone(ZoneInfo("Europe/Helsinki"))
+    
     def message_date_in_helsinki(self, message):
-        helsinki_time = message.created_at.astimezone(ZoneInfo("Europe/Helsinki"))
-        return helsinki_time.date()
+        return self.message_datetime_in_helsinki(message).date()
 
     def check_midnight_winner(self, message):
         helsinki_date = self.message_date_in_helsinki(message)
@@ -291,9 +293,9 @@ class MyBot:
         await ctx.respond("\n".join(lines))
 
     async def process_message(self, message):
-        now = datetime.now(ZoneInfo("Europe/Helsinki"))
+        message_time = self.message_datetime_in_helsinki(message)
         
-        if now.hour == 0 and now.minute == 0 and self.check_midnight_winner(message):
+        if message_time.hour == 0 and message_time.minute == 0 and self.check_midnight_winner(message):
             await message.add_reaction('🏆')
 
         self.increment_todays_message_count(message.author.id)

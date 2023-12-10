@@ -2,7 +2,7 @@ import re
 
 def contains_midnight_phrase(text: str) -> bool:
 	match = re.search('(h.*?i.*?n.*?t)|(h.*?k.*?t.*?ä)', text, re.IGNORECASE)
-	if not match:
+	if not match or len(match.group()) > 20:
 		return False
 	n_edits = min(
 		distance(match.group(), "happy midnight"),

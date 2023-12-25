@@ -1,6 +1,7 @@
 import unittest
+import datetime
 
-from midnight import contains_midnight_phrase
+from midnight import contains_midnight_phrase, get_prize
 
 
 class ContainsMidnightPhrase(unittest.TestCase):
@@ -24,6 +25,19 @@ class ContainsMidnightPhrase(unittest.TestCase):
 
     def test_invalid_pleksiyo(self):
         self.assertFalse(contains_midnight_phrase("Hyvää pleksiyötä!"))
+
+class GetPrize(unittest.TestCase):
+    def test_trophy(self):
+        self.assertEqual(get_prize("Hyvää keskiyötä", datetime.date(year=2023, month=1, day=2)), '🏆')
+
+    def test_crown(self):
+        self.assertEqual(get_prize("Hyvää keskiyötä", datetime.date(year=2023, month=1, day=1)), '👑')
+
+    def test_cookie(self):
+        self.assertEqual(get_prize("Hyvää keksiyötä", datetime.date(year=2023, month=1, day=2)), '🍪')
+
+    def test_cookie_and_new_year(self):
+        self.assertEqual(get_prize("Hyvää keksiyötä", datetime.date(year=2023, month=1, day=1)), '👑')
 
 
 if __name__ == '__main__':

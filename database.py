@@ -7,6 +7,7 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
         "host": "localhost",
         "user": username,
         "password": password,
+        "charset": "utf8mb4", # Need 4-byte unicode for emoji support
     }
 
     connection_pool = MySQLConnectionPool(
@@ -17,13 +18,8 @@ def open_database(db_name: str, username: str, password: str) -> MySQLConnection
     create_db_if_needed(pool=connection_pool, db_name=db_name)
 
     # Add "database" to config after it's been created
-    db_config_with_database = {
-        "host": "localhost",
-        "database": db_name,
-        "user": username,
-        "password": password,
-    }
-    connection_pool.set_config(**db_config_with_database)
+    db_config["database"] = db_name
+    connection_pool.set_config(**db_config)
 
     create_tables_if_needed(pool=connection_pool)
 
@@ -64,10 +60,13 @@ def create_tables_if_needed(pool: MySQLConnectionPool):
 
         cursor.execute(create_autodelete_table)
 
+        # Midnight winners table.
+        # The prize is an emoji in unicode.
         midnight_winners = """
         CREATE TABLE IF NOT EXISTS midnight_winners (
             date DATE PRIMARY KEY,
-            user_id BIGINT UNSIGNED
+            user_id BIGINT UNSIGNED,
+            prize CHAR(4) CHARACTER SET utf8mb4
         )
         """
 

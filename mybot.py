@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from mysql.connector.pooling import MySQLConnectionPool
 
 from database import open_database
-from midnight import contains_midnight_phrase
+import midnight
 from nick import update_nickname_cache, get_nick
 from send_dm import send_dm
 
@@ -93,7 +93,6 @@ class MyBot:
         self.guild_id = guild_id
         self.api = api
         self.connection_pool: MySQLConnectionPool = open_database(db_name, db_user, db_password)
-        self.number_of_message_times_to_remember = 5 # Todo: to config
     
     # If no job is yet active, creates a new job
     def set_autodel(self, channel_id, callback_interval_minutes, delete_older_than_minutes): # returns new autodel config
@@ -239,9 +238,15 @@ class MyBot:
     def message_date_in_helsinki(self, message):
         return self.message_datetime_in_helsinki(message).date()
 
-    def check_midnight_winner(self, message):
+    # Returns the emoji prize, or None if the prize for today has already been won by someone
+    # If there was a winner, it's stored in the database.
+    def check_midnight_winner(self, message) -> str:
         helsinki_date = self.message_date_in_helsinki(message)
-        if message.channel.id == self.midnight_channel_id and contains_midnight_phrase(message.content):
+        if message.channel.id == self.midnight_channel_id and midnight.contains_midnight_phrase(message.content):
+            # Winner
+            prize = midnight.get_prize(message.content, helsinki_date)
+            assert(len(prize) == 1) # Single character
+
             with self.connection_pool.get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -250,12 +255,11 @@ class MyBot:
                 if len(cursor.fetchall()) > 0:
                     return # Already have a winner for today
 
-                cursor.execute("INSERT INTO midnight_winners (date, user_id) VALUES (%s, %s)", [helsinki_date, message.author.id])
+                cursor.execute("INSERT INTO midnight_winners (date, user_id, prize) VALUES (%s, %s, %s)", [helsinki_date, message.author.id, prize])
 
                 conn.commit()
-            return True
-    
-        return False
+            return prize
+        return None
     
 
     async def list_threads_command(self, ctx):
@@ -279,24 +283,34 @@ class MyBot:
     async def midnight_winners_command(self, ctx):
         with self.connection_pool.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT user_id, date FROM midnight_winners")
+            cursor.execute("SELECT user_id, date, prize FROM midnight_winners")
             winners = cursor.fetchall()
+
+        # Collect total win counts and counts for individual trophies
+        total_wins = defaultdict(int) # User id -> total win count
+        prizes = defaultdict(lambda : defaultdict(int)) # User id -> dict of (prize -> count)
+        distinct_prizes = set()
+        for (user_id, date, prize) in winners:
+            total_wins[user_id] += 1
+            prizes[user_id][prize] += 1
+            distinct_prizes.add(prize)
+
+        # List users in decreasing order of total wins
         lines = []
         lines.append("**Midnight Winners**")
-        wincounts = defaultdict(int)
-        for (user_id, date) in winners:
-            wincounts[user_id] += 1
-        pairs = [(wincounts[user_id], user_id) for user_id in wincounts]
+        pairs = [(total_wins[user_id], user_id) for user_id in total_wins]
         for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
             nick = get_nick(user_id, guild=ctx.guild)
-            lines.append("**{}**. **{}**: {} × 🏆".format(i+1, nick, wins))
+            counts = [(trophy, prizes[user_id][trophy]) for trophy in prizes[user_id].keys()] # Pairs (trophy, count)
+            lines.append("**{}**. **{}**: {}".format(i+1, nick, midnight.format_trophy_counts(counts)))
         await ctx.respond("\n".join(lines))
 
     async def process_message(self, message):
         message_time = self.message_datetime_in_helsinki(message)
-        
-        if message_time.hour == 0 and message_time.minute == 0 and self.check_midnight_winner(message):
-            await message.add_reaction('🏆')
+        if message_time.hour == 0 and message_time.minute == 0:
+            prize = self.check_midnight_winner(message)
+            if prize != None:
+                await message.add_reaction(prize)
 
         self.increment_todays_message_count(message.author.id)
         update_nickname_cache(message.author, self.guild_id)

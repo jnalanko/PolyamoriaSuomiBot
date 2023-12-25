@@ -1,8 +1,7 @@
 # Installing
 ## Prerequisites
-- python (TODO: define exact version)
-- mysql and a database dedicated to the bot
-  - currently mysql must be running at `localhost` and use the default port
+- Python 3.9
+- MariaDB 10.6 running at localhost at the default port.
 - discord bot account (details below)
 ## Steps
 - clone this repo

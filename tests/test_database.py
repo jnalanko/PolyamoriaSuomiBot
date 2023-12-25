@@ -9,10 +9,12 @@ from database import create_db_if_needed
 class TestDatabaseCreation(unittest.TestCase):
     def setUp(self):
         self.assertIsNotNone(os.getenv("TEST_MARIADB_ROOT_PASSWORD"), "TEST_MARIADB_ROOT_PASSWORD must be set")
+        root_user = os.getenv("TEST_MARIADB_ROOT_USER")
+        if root_user == None: root_user = "root" # Default
         self.pool = MySQLConnectionPool(pool_name="test_pool",
                                         pool_size=1,
                                         host="127.0.0.1",
-                                        user="root",
+                                        user=root_user,
                                         password=os.getenv("TEST_MARIADB_ROOT_PASSWORD"))
         self.test_db_name = "test_polyamoria_suomi_bot_unique_d83k19tv5lg8"
 

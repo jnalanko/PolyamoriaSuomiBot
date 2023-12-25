@@ -1,5 +1,5 @@
 py-cord-dev>=2.5.0rc1,<2.5.1 # Switch to just py-cord when 2.5 comes out
 pyyaml >= 5.4.1
 apscheduler == 3.8.0
-mysql-connector-python >= 8.1.0
+mysql-connector-python == 8.1.0
 tzdata

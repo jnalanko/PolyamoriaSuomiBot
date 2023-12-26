@@ -23,7 +23,7 @@ def trophy_sort_key(trophy: str) -> int:
     elif trophy == '👑': return 1
     else: return ord(trophy) # The rank of the character in unicode
 
-# Takes in a nickname and a list of counts like [('🏆', 4), ('🍪', 5), ('👑', 1)].
+# Takes a list of counts like [('🏆', 4), ('🍪', 5), ('👑', 1)].
 # Returns a string describing the counts.
 def format_trophy_counts(counts: list) -> str:
     counts.sort(key = lambda X : trophy_sort_key(X[0]))

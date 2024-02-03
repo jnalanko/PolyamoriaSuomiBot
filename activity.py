@@ -8,6 +8,7 @@ import logging
 aktiivi_role_id = 1203348797368049704
 osallistuja_role_id = 1203348855534526474
 hiljainen_role_id = 1203348933791719475
+jasen_role_id = 520963751478820875 # "jäsen"
 
 def get_activity_role_id(message_count: int):
     if message_count >= 10: # "Aktiivi"
@@ -39,8 +40,10 @@ async def update_roles(db_connection, guild, api):
         
         print(user_id, member.name, new_role_id, new_role)
 
-        # Assign new role (does nothing if already had this role?)
-        await member.add_roles(new_role) 
+        if any([role.id == jasen_role_id for role in member.roles]):
+            # Only give activity roles to members than have the jäsen role
+            await member.add_roles(new_role) 
+
         continue
 
         # Remove old role (activity roles are mutually exclusive)

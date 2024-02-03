@@ -9,7 +9,7 @@ aktiivi_role_id = 1203348797368049704
 osallistuja_role_id = 1203348855534526474
 hiljainen_role_id = 1203348933791719475
 
-def get_activity_role(message_count: int):
+def get_activity_role_id(message_count: int):
     if message_count >= 10: # "Aktiivi"
         return aktiivi_role_id
     elif message_count >= 3: # "Osallistuja"
@@ -18,23 +18,30 @@ def get_activity_role(message_count: int):
         return hiljainen_role_id
     
 
-async def update_roles(db_connection, api):
+async def update_roles(db_connection, guild, api):
     # - Get the summed up message counts by user id from the database
     # - For each user, change the role according to the message count. Send DM if there were changes.
 
-    cursor = conn.cursor()
+    cursor = db_connection.cursor()
     cursor.execute("SELECT user_id, sum(count) AS total FROM message_counts GROUP BY user_id")
     winners = cursor.fetchall()
 
     for (user_id, message_count) in winners:
-        new_role = get_activity_role(message_count)
-        print(user_id, new_role)
-        return # DEBUG
-
-        user = await api.fetch_user(user_id)
+        new_role_id = get_activity_role_id(message_count)
+        new_role = guild.get_role(new_role_id)
+    
+        member = guild.get_member(user_id) # Get cached member objec5
+        #if member == None: # Try to get the member with an API call
+        #    member = await guild.fetch_member(user_id)
+        if member == None:
+            print("Member", user_id, "not found")
+            continue
+        
+        print(user_id, member.name, new_role_id, new_role)
 
         # Assign new role (does nothing if already had this role?)
-        user.add_roles(new_role) 
+        await member.add_roles(new_role) 
+        continue
 
         # Remove old role (activity roles are mutually exclusive)
         if new_role != aktiivi_role_id:
@@ -60,27 +67,28 @@ this = sys.modules[__name__]
 this.running = False
 
 yaml_filename = "config_local.yaml"
-global_config = yaml.safe_load(open(yaml_filename))
-print("Global config:", global_config)
+configs = yaml.safe_load(open(yaml_filename))
+cfg = configs["instances"][520938302946148367] # Polymoaria Suomi guild id
 
-# Initialize the client
+# Initialize the bot
 print("Starting up...")
-client = discord.Client(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
+bot = discord.Bot(intents=discord.Intents(message_content=True, guild_messages=True, guilds=True, messages=True, members=True))
 
-connection_pool = database.open_database(db_name, db_user, db_password)
+connection_pool = database.open_database(cfg["db_name"], cfg["db_user"], cfg["db_password"])
 
-# Define event handlers for the client
+# Define event handlers for the bot
 # on_ready may be called multiple times in the event of a reconnect,
 # hence the running flag
-@client.event
+@bot.event
 async def on_ready():
     if this.running: return
     else: this.running = True
 
     print("Bot started up.", flush=True)
-    print(client.guilds)
-    for guild in client.guilds:
+    print(bot.guilds)
+    print(len(bot.guilds))
+    for guild in bot.guilds:
         if guild.name == "Polyamoria Suomi":
-            await update_roles(guild, connection_pool.get_connection())
+            await update_roles(connection_pool.get_connection(), guild, bot)
 
-client.run(global_config["token"])
+bot.run(configs["token"])

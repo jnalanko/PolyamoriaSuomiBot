@@ -3,6 +3,7 @@ import database
 import discord
 import yaml
 import logging
+import datetime
 from typing import Optional
 
 # TODO: put these to a config file
@@ -52,7 +53,7 @@ async def process_member(guild: discord.Guild, member: discord.Member, message_c
     new_activity_role_id = get_activity_role_id(message_count, is_jasen) # Can be None
     await set_activity_role(guild, member, new_activity_role_id)
 
-async def update_roles(db_connection, guild, api):
+async def update_all_users(db_connection, guild, api):
     # - Get the summed up message counts by user id from the database
     # - For each user, change the role according to the message count. Send DM if there were changes.
 
@@ -70,7 +71,14 @@ async def update_roles(db_connection, guild, api):
     # TODO: DM user
         
 def clean_up_activity_database(db_connection, days_to_keep):
-    pass
+    cutoff_date = datetime.datetime.now() - datetime.timedelta(days=days_to_keep) # Older than this will be deleted
+
+    print("Deleting message counts before date", cutoff_date)
+    cursor = db_connection.cursor()
+    cursor.execute("DELETE FROM message_counts WHERE date < %s", [cutoff_date])
+    print("Deleted",cursor.rowcount,"rows")
+
+    db_connection.commit()
 
 
 # "MAIN FUNCTION" below
@@ -105,6 +113,7 @@ async def on_ready():
     print(len(bot.guilds))
     for guild in bot.guilds:
         if guild.name == "Polyamoria Suomi":
-            await update_roles(connection_pool.get_connection(), guild, bot)
+            clean_up_activity_database(connection_pool.get_connection(), 90)
+            await update_all_users(connection_pool.get_connection(), guild, bot)
 
 bot.run(configs["token"])

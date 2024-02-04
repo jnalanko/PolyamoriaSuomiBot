@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 
 from mysql.connector.pooling import MySQLConnectionPool
 
+import discord
+
 from database import open_database
 import midnight
 from nick import update_nickname_cache, get_nick
@@ -82,7 +84,7 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, db_name, db_user, db_password, admin_user_id, api):
+    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, ei_osallistuja_role_id, ei_aktiivi_role_id, db_name, db_user, db_password, admin_user_id, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
@@ -90,7 +92,8 @@ class MyBot:
         self.bot_channel_id = bot_channel_id
         self.admin_user_id = admin_user_id
         self.midnight_channel_id = midnight_channel_id
-        self.guild_id = guild_id
+        self.ei_osallistuja_role_id = ei_osallistuja_role_id
+        self.ei_aktiivi_role_id = ei_aktiivi_role_id
         self.api = api
         self.connection_pool: MySQLConnectionPool = open_database(db_name, db_user, db_password)
     
@@ -333,4 +336,7 @@ class MyBot:
             else:
                 result = roll.do_roll(expression)
                 await message.channel.send(message.author.display_name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
+
+    async def on_member_join(self, member: discord.Member):
+        member.add_roles(member.guild.fetch_role(self.ei_osallistuja_role_id)) # TODO: cache the role object
         

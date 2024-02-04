@@ -7,12 +7,16 @@ import datetime
 import send_dm
 from typing import Optional
 
-# TODO: put these to a config file
+# Load the config
+yaml_filename = "config_local.yaml"
+configs = yaml.safe_load(open(yaml_filename))
+cfg = configs["instances"][520938302946148367] # Polymoaria Suomi guild id
+
 # Here are the two activity roles we have.
 # It's a hardcoded assumption across this whole file
 # that there are exactly these two different activity roles
-ei_aktiivi_role_id = 1203718722259517480
-ei_osallistuja_role_id = 1203718840723443813 
+ei_aktiivi_role_id = cfg["ei_aktiivi_role_id"]
+ei_osallistuja_role_id = cfg["ei_osallistuja_role_id"]
 
 # The jäsen role is manually assigned by moderators. It's not
 # considered an "activity role". Having the jäsen role is a prerequisite
@@ -118,18 +122,14 @@ def clean_up_activity_database(db_connection, days_to_keep):
     db_connection.commit()
 
 
-# "MAIN FUNCTION" below
-
-logging.basicConfig(level=logging.INFO)
+##
+## Start the bot
+##
 
 # Set to remember if the bot is already running, since on_ready may be called
 # more than once on reconnects
 this = sys.modules[__name__]
 this.running = False
-
-yaml_filename = "config_local.yaml"
-configs = yaml.safe_load(open(yaml_filename))
-cfg = configs["instances"][520938302946148367] # Polymoaria Suomi guild id
 
 # Initialize the bot
 print("Starting up...")
@@ -152,5 +152,6 @@ async def on_ready():
         if guild.name == "Polyamoria Suomi":
             clean_up_activity_database(connection_pool.get_connection(), 90)
             await update_all_users(connection_pool.get_connection(), guild, bot)
+    print("FINISHED")
 
 bot.run(configs["token"])

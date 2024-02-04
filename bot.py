@@ -63,7 +63,7 @@ async def on_message(message: discord.Message):
 
 @bot.event
 async def on_member_join(member: discord.Member):
-    mybot = instances[message.guild.id]
+    mybot = instances[member.guild.id]
     await mybot.on_member_join(member)
 
 @bot.slash_command(guild_ids=guild_ids, name="midnight-winners", description="Midnight winners")

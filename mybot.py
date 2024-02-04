@@ -338,5 +338,5 @@ class MyBot:
                 await message.channel.send(message.author.display_name + " heitti `" + expression.strip() + "`, tulos: `" + result + "`")
 
     async def on_member_join(self, member: discord.Member):
-        member.add_roles(member.guild.fetch_role(self.ei_osallistuja_role_id)) # TODO: cache the role object
+        await member.add_roles(self.api.get_guild(self.guild_id).get_role(self.ei_osallistuja_role_id))
         

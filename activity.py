@@ -3,21 +3,54 @@ import database
 import discord
 import yaml
 import logging
+from typing import Optional
 
 # TODO: put these to a config file
 aktiivi_role_id = 1203348797368049704
 osallistuja_role_id = 1203348855534526474
-hiljainen_role_id = 1203348933791719475
 jasen_role_id = 520963751478820875 # "jäsen"
 
-def get_activity_role_id(message_count: int):
+def get_activity_role_id(message_count: int, is_jasen: bool) -> Optional[discord.Role]:
+    if not is_jasen: return None # Non-members can't have activity roles
+
     if message_count >= 10: # "Aktiivi"
         return aktiivi_role_id
     elif message_count >= 3: # "Osallistuja"
         return osallistuja_role_id
-    else: # Hiljainen
-        return hiljainen_role_id
+    else:
+        return None
     
+# May return None if member not found
+async def get_member_by_id(guild: discord.Guild, user_id: int) -> Optional[discord.Member]:
+    member = guild.get_member(user_id) # Get cached member object, can be None
+    if member == None: # Try to get the member with an API call
+        try:
+            member = await guild.fetch_member(user_id)
+        except:
+            print("Warning: error fetching member", user_id)
+            return None
+    return member
+
+async def set_activity_role(guild: discord.Guild, member: discord.Member, role_id : Optional[int]):
+    assert(role_id == None or role_id == aktiivi_role_id or role_id == osallistuja_role_id)
+    print("Setting", member.name, "to", role_id)
+
+    if role_id == None:
+       await member.remove_roles(guild.get_role(osallistuja_role_id))
+       await member.remove_roles(guild.get_role(aktiivi_role_id))
+    else: 
+        await member.add_roles(guild.get_role(role_id))
+
+        # Keep activity roles mutually exclusive
+        if role_id == aktiivi_role_id:
+            await member.remove_roles(guild.get_role(osallistuja_role_id))
+        elif role_id == osallistuja_role_id:
+            await member.remove_roles(guild.get_role(aktiivi_role_id))
+
+async def process_member(guild: discord.Guild, member: discord.Member, message_count):
+    is_jasen = any([role.id == jasen_role_id for role in member.roles])
+    new_activity_role_id = get_activity_role_id(message_count, is_jasen) # Can be None
+    await set_activity_role(guild, member, new_activity_role_id)
 
 async def update_roles(db_connection, guild, api):
     # - Get the summed up message counts by user id from the database
@@ -25,36 +58,16 @@ async def update_roles(db_connection, guild, api):
 
     cursor = db_connection.cursor()
     cursor.execute("SELECT user_id, sum(count) AS total FROM message_counts GROUP BY user_id")
-    winners = cursor.fetchall()
+    message_counts = cursor.fetchall()
 
-    for (user_id, message_count) in winners:
-        new_role_id = get_activity_role_id(message_count)
-        new_role = guild.get_role(new_role_id)
-    
-        member = guild.get_member(user_id) # Get cached member objec5
-        #if member == None: # Try to get the member with an API call
-        #    member = await guild.fetch_member(user_id)
-        if member == None:
-            print("Member", user_id, "not found")
-            continue
-        
-        print(user_id, member.name, new_role_id, new_role)
+    for (user_id, message_count) in message_counts:
+        member = await get_member_by_id(guild, user_id)
+        if member == None: 
+            print("User", user_id, "not found") # Has left the guild?
+        else:
+            await process_member(guild, member, message_count)
 
-        if any([role.id == jasen_role_id for role in member.roles]):
-            # Only give activity roles to members than have the jäsen role
-            await member.add_roles(new_role) 
-
-        continue
-
-        # Remove old role (activity roles are mutually exclusive)
-        if new_role != aktiivi_role_id:
-            user.remove_roles(aktiivi_role_id)
-        if new_role != osallistuja_role_id:
-            user.remove_roles(osallistuja_role_id)
-        if new_role != hiljainen_role_id:
-            user.remove_roles(hiljainen_role_id)
-
-        # TODO: DM user
+    # TODO: DM user
         
 def clean_up_activity_database(db_connection, days_to_keep):
     pass

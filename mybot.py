@@ -277,7 +277,7 @@ class MyBot:
                     await send_dm(self.api, ctx.author.id, "Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count))
                     await ctx.respond("Viestien määrä lähetetty yksityisviestillä.")
                 except:
-                    await ctx.respond("Yritin lähettää viestien määrän yksityisviestillä, mutta se ei onnistunut. Onko sinulla DM sallittu ei-kavereilta?")
+                    await ctx.respond("Yritin lähettää viestien määrän yksityisviestillä, mutta se ei onnistunut. Onko sinulla yksityisviestit sallittu ei-kavereilta?")
 
     async def list_threads_command(self, ctx):
         lines = []

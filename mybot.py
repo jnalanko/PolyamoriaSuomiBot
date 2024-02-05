@@ -270,14 +270,22 @@ class MyBot:
             cursor.execute("SELECT SUM(count) FROM message_counts WHERE user_id = %s", [ctx.author.id])
             rows = cursor.fetchall()
             if len(rows) != 1 or len(rows[0]) != 1:
-                await ctx.respond("Virhe! Sori, en osannut.")
+                await ctx.send_response(
+                        content="Virhe! Sori, en osannut.",
+                        ephemeral=True,
+                    )
             else:
                 count = int(rows[0][0])
                 try:
-                    await send_dm(self.api, ctx.author.id, "Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count))
-                    await ctx.respond("Viestien määrä lähetetty yksityisviestillä.")
+                    await ctx.send_response(
+                            content="Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count),
+                            ephemeral=True,
+                        )
                 except:
-                    await ctx.respond("Yritin lähettää viestien määrän yksityisviestillä, mutta se ei onnistunut. Onko sinulla yksityisviestit sallittu ei-kavereilta?")
+                    await ctx.send_response(
+                            content="Yritin lähettää viestien määrän, mutta se ei onnistunut.",
+                            ephemeral=True,
+                        )
 
     async def list_threads_command(self, ctx):
         lines = []

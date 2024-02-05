@@ -70,10 +70,10 @@ async def on_member_join(member: discord.Member):
 async def midnight_winners(ctx):
     await instances[ctx.guild_id].midnight_winners_command(ctx)
 
-@bot.slash_command(guild_ids=guild_ids, name="threads", description="List of threads")
-async def threads(ctx):
+#@bot.slash_command(guild_ids=guild_ids, name="threads", description="List of threads")
+#async def threads(ctx):
     #await instances[ctx.guild_id].list_threads_command(ctx)
-    pass
+#    pass
 
 @bot.slash_command(guild_ids=guild_ids, name="viestilaskuri", description="Viimeisen 3kk:n viestimäärä DM:llä")
 async def message_count(ctx):

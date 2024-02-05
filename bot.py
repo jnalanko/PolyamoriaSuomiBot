@@ -75,6 +75,11 @@ async def threads(ctx):
     #await instances[ctx.guild_id].list_threads_command(ctx)
     pass
 
+@bot.slash_command(guild_ids=guild_ids, name="viestilaskuri", description="Viimeisen 3kk:n viestimäärä DM:llä")
+async def message_count(ctx):
+    await instances[ctx.guild_id].message_count_command(ctx)
+    pass
+
 
 
 bot.run(configs["token"])

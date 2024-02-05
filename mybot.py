@@ -264,6 +264,20 @@ class MyBot:
             return prize
         return None
     
+    async def message_count_command(self, ctx):
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT SUM(count) FROM message_counts WHERE user_id = %s", [ctx.author.id])
+            rows = cursor.fetchall()
+            if len(rows) != 1 or len(rows[0]) != 1:
+                await ctx.respond("Virhe! Sori, en osannut.")
+            else:
+                count = int(rows[0][0])
+                try:
+                    await send_dm(self.api, ctx.author.id, "Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count))
+                    await ctx.respond("Viestien määrä lähetetty yksityisviestillä.")
+                except:
+                    await ctx.respond("Yritin lähettää viestien määrän yksityisviestillä, mutta se ei onnistunut. Onko sinulla DM sallittu ei-kavereilta?")
 
     async def list_threads_command(self, ctx):
         lines = []

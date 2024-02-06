@@ -153,5 +153,6 @@ async def on_ready():
             clean_up_activity_database(connection_pool.get_connection(), 90)
             await update_all_users(connection_pool.get_connection(), guild, bot)
     print("FINISHED")
+    await bot.close()
 
 bot.run(configs["token"])

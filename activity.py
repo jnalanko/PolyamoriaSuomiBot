@@ -49,8 +49,7 @@ async def set_activity_role(guild: discord.Guild, member: discord.Member, role_i
 
     current_activity_roles = get_current_activity_role_ids(guild,member)
     if len(current_activity_roles) == 0:
-        #print("WARNING: USER {} HAS NO ACTIVITY ROLE!!".format(member.name))
-        pass
+        print("WARNING: USER {} HAS NO ACTIVITY ROLE!!".format(member.name))
     
     if current_activity_roles != set([role_id]):
         print("Setting", member.name, "to", role_id)

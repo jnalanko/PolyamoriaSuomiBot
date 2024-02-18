@@ -15,8 +15,9 @@ instances:
     db_name: 
     db_password: 
     db_user: 
-    ei_aktiivi_role_id:
-    ei_osallistuja_role_id:
+    osallistuja_role_id: 
+    lukija_role_id:
+    aktiivi_role_id:
 
 token: Get this from the Discord developer portal
 master_admin_user_id: # Error messages not specific to any guild will be DM'd to this user id (integer)
@@ -31,8 +32,9 @@ master_admin_user_id: # Error messages not specific to any guild will be DM'd to
 #     db_name: my_db
 #     db_password: Very-Secure-Password123!
 #     db_user: my_db_user
-#     ei_aktiivi_role_id: 12121212
-#     ei_osallistuja_role_id: 34343434
+#     osallistuja_role_id: 12345
+#     lukija_role_id: 12354
+#     aktiivi_role_id: 23523
 #
 # token: NOTREAL.X00o05XB9aNcYTgU7S3H6rKi6QRfaNI7qVZ0Kq5wYNKA1pLeIRmb3Hk0jzTd3XemSk8
 # master_admin_user_id: 987654321098765432 # Error messages not specific to any guild will be DM'd to this user id (integer)

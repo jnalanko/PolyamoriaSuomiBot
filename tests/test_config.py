@@ -11,7 +11,10 @@ VALID_CONFIG = {
             'midnight_channel_id': 4564564564564564564,
             'db_name': 'mydb',
             'db_password': 'very-secure-password',
-            'db_user': 'root'
+            'db_user': 'root',
+            'osallistuja_role_id': 12345,
+            'lukija_role_id': 12354,
+            'aktiivi_role_id': 23523
         }
     },
     'token': 'NOTREAL.X00o05XB9aNcYTgU7S3H6rKi6QRfaNI7qVZ0Kq5wYNKA1pLeIRmb3Hk0jzTd3XemSk8',

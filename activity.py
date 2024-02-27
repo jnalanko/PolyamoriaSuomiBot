@@ -9,8 +9,7 @@ from typing import Optional
 
 # Load the config
 yaml_filename = "config_local.yaml"
-configs = yaml.safe_load(open(yaml_filename))
-cfg = configs["instances"][520938302946148367] # Polymoaria Suomi guild id
+cfg = yaml.safe_load(open(yaml_filename))
 
 # Here are the two activity roles we have.
 # It's a hardcoded assumption across this whole file
@@ -22,7 +21,7 @@ aktiivi_role_id = cfg["aktiivi_role_id"]
 # The jäsen role is manually assigned by moderators. It's not
 # considered an "activity role". Having the jäsen role is a prerequisite
 # for getting an activity role.
-jasen_role_id = 520963751478820875 # "jäsen"
+jasen_role_id = 520963751478820875 # "jäsen". Todo: to config
 
 def get_activity_role_id(message_count: int, is_jasen: bool) -> discord.Role:
     if not is_jasen or message_count < 3: return lukija_role_id 
@@ -156,5 +155,5 @@ async def on_ready():
     print("FINISHED")
     await client.close()
 
-client.run(configs["token"])
+client.run(cfg["token"])
 

@@ -3,7 +3,7 @@
 guild_id: 849763655084015659 # Drai's server
 bot_channel_id: 891736741600456715
 midnight_channel_id: 849763655632420937
-admin_user_id: 274591752969781250 # Error messages related to this guild will be DM'd to this user (drai2)
+admin_user_id: 274591752969781250 # Error messages will be DM'd to this user (drai2)
 db_name: polyamoria_suomi_test
 db_password: salasana # Yeah, not very secure. Use a better password in production.
 db_user: polyamoria_suomi_test

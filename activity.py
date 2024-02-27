@@ -11,9 +11,9 @@ from typing import Optional
 yaml_filename = "config_local.yaml"
 cfg = yaml.safe_load(open(yaml_filename))
 
-# Here are the two activity roles we have.
+# Here are activity roles we have.
 # It's a hardcoded assumption across this whole file
-# that there are exactly these two different activity roles
+# that there are exactly these three different activity roles
 osallistuja_role_id = cfg["osallistuja_role_id"]
 lukija_role_id = cfg["lukija_role_id"]
 aktiivi_role_id = cfg["aktiivi_role_id"]
@@ -21,7 +21,7 @@ aktiivi_role_id = cfg["aktiivi_role_id"]
 # The jäsen role is manually assigned by moderators. It's not
 # considered an "activity role". Having the jäsen role is a prerequisite
 # for getting an activity role.
-jasen_role_id = 520963751478820875 # "jäsen". Todo: to config
+jasen_role_id = cfg["jasen_role_id"]
 
 def get_activity_role_id(message_count: int, is_jasen: bool) -> discord.Role:
     if not is_jasen or message_count < 3: return lukija_role_id 
@@ -149,9 +149,8 @@ async def on_ready():
     print(client.guilds)
     print(len(client.guilds))
     for guild in client.guilds:
-        if guild.name == "Polyamoria Suomi":
-            clean_up_activity_database(connection_pool.get_connection(), 90)
-            await update_all_users(connection_pool.get_connection(), guild, client)
+        clean_up_activity_database(connection_pool.get_connection(), 90)
+        await update_all_users(connection_pool.get_connection(), guild, client)
     print("FINISHED")
     await client.close()
 

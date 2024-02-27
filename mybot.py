@@ -84,7 +84,7 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, lukija_role_id, osallistuja_role_id, db_name, db_user, db_password, admin_user_id, api):
+    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, lukija_role_id, osallistuja_role_id, db_name, db_user, db_password, admin_user_id, activity_ignore_channel_ids, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
@@ -94,6 +94,7 @@ class MyBot:
         self.midnight_channel_id = midnight_channel_id
         self.lukija_role_id = lukija_role_id 
         self.osallistuja_role_id = osallistuja_role_id
+        self.activity_ignore_channel_ids = activity_ignore_channel_ids
         self.api = api
         self.connection_pool: MySQLConnectionPool = open_database(db_name, db_user, db_password)
     
@@ -337,7 +338,9 @@ class MyBot:
             if prize != None:
                 await message.add_reaction(prize)
 
-        self.increment_todays_message_count(message.author.id)
+        if message.channel.id not in self.activity_ignore_channel_ids:
+            self.increment_todays_message_count(message.author.id)
+
         update_nickname_cache(message.author, self.guild_id)
 
         if message.channel.id == self.bot_channel_id:

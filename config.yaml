@@ -18,6 +18,7 @@ instances:
     osallistuja_role_id: 
     lukija_role_id:
     aktiivi_role_id:
+    activity_ignore_channel_ids:
 
 token: Get this from the Discord developer portal
 master_admin_user_id: # Error messages not specific to any guild will be DM'd to this user id (integer)

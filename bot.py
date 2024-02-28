@@ -69,4 +69,9 @@ async def message_count(ctx):
     await mybot.message_count_command(ctx)
     pass
 
+@bot.slash_command(name="toisen-viestilaskuri", description="Toisen käyttäjän viimeisen 3kk:n viestimäärä DM:llä (vain moderaattoreille).")
+async def message_count_other(ctx, käyttäjä: discord.Option(discord.SlashCommandOptionType.user)): # "käyttäjä" is in Finnish because it shows in the slash command help"
+    await mybot.message_count_other_command(ctx, käyttäjä)
+    pass
+
 bot.run(cfg["token"])

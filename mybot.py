@@ -264,7 +264,30 @@ class MyBot:
                 conn.commit()
             return prize
         return None
-    
+
+    async def message_count_other_command(self, ctx, user):
+        with self.connection_pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT SUM(count) FROM message_counts WHERE user_id = %s", [user.id])
+            rows = cursor.fetchall()
+            if len(rows) != 1 or len(rows[0]) != 1:
+                await ctx.send_response(
+                        content="Virhe! Sori, en osannut.",
+                        ephemeral=True,
+                    )
+            else:
+                count = int(rows[0][0])
+                try:
+                    await ctx.send_response(
+                            content="Käyttäjä {} on lähettänyt tarkastelujakson aikana {} viestiä.".format(user.name, count),
+                            ephemeral=True,
+                        )
+                except:
+                    await ctx.send_response(
+                            content="Yritin lähettää viestien määrän, mutta se ei onnistunut.",
+                            ephemeral=True,
+                        )
+
     async def message_count_command(self, ctx):
         with self.connection_pool.get_connection() as conn:
             cursor = conn.cursor()

@@ -19,6 +19,10 @@ import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
 
 
+class MessageCountException(Exception):
+    def __init__(self, message):
+        self.message = message
+
 class AutoDeleteCallBack:
 
     # Returns whether the message was deleted
@@ -265,51 +269,43 @@ class MyBot:
             return prize
         return None
 
-    async def message_count_other_command(self, ctx, user):
+
+    # Can raise a MessageCountException
+    def get_user_total_message_count(self, user):
         with self.connection_pool.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT SUM(count) FROM message_counts WHERE user_id = %s", [user.id])
             rows = cursor.fetchall()
             if len(rows) != 1 or len(rows[0]) != 1:
-                await ctx.send_response(
-                        content="Virhe! Sori, en osannut.",
-                        ephemeral=True,
-                    )
-            else:
-                count = int(rows[0][0])
-                try:
-                    await ctx.send_response(
-                            content="Käyttäjä {} on lähettänyt tarkastelujakson aikana {} viestiä.".format(user.name, count),
-                            ephemeral=True,
-                        )
-                except:
-                    await ctx.send_response(
-                            content="Yritin lähettää viestien määrän, mutta se ei onnistunut.",
-                            ephemeral=True,
-                        )
+                raise MessageCountException("Virhe viestien määrän hakemisessa.")
+
+            if rows[0][0] == None: return 0 # User not in the message count table
+            else: return int(rows[0][0])
+
+    async def message_count_other_command(self, ctx, user):
+        try:
+            count = self.get_user_total_message_count(user)
+        except MessageCountException as e:
+            await ctx.send_response(content=e.message, ephemeral=True)
+            return 
+
+        await ctx.send_response(
+                content="Käyttäjä {} on lähettänyt tarkastelujakson aikana {} viestiä.".format(user.name, count),
+                ephemeral=True,
+        )
 
     async def message_count_command(self, ctx):
-        with self.connection_pool.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT SUM(count) FROM message_counts WHERE user_id = %s", [ctx.author.id])
-            rows = cursor.fetchall()
-            if len(rows) != 1 or len(rows[0]) != 1:
-                await ctx.send_response(
-                        content="Virhe! Sori, en osannut.",
-                        ephemeral=True,
-                    )
-            else:
-                count = int(rows[0][0])
-                try:
-                    await ctx.send_response(
-                            content="Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count),
-                            ephemeral=True,
-                        )
-                except:
-                    await ctx.send_response(
-                            content="Yritin lähettää viestien määrän, mutta se ei onnistunut.",
-                            ephemeral=True,
-                        )
+        try:
+            count = self.get_user_total_message_count(ctx.author)
+        except MessageCountException as e:
+            await ctx.send_response(content=e.message, ephemeral=True)
+            return 
+
+        await ctx.send_response(
+                content="Olet lähettänyt tarkastelujakson aikana {} viestiä.".format(count),
+                ephemeral=True,
+        )
+
 
     async def list_threads_command(self, ctx):
         lines = []

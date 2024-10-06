@@ -1,6 +1,8 @@
 import sys
 
 import discord
+from discord import option
+
 import yaml
 import logging
 
@@ -74,9 +76,11 @@ async def message_count_other(ctx, käyttäjä: discord.Option(discord.SlashComm
     await mybot.message_count_other_command(ctx, käyttäjä)
     pass
 
-@bot.slash_command(name="post-copy", description="Tekee toisen käyttäjän viestistä kopion, jonka julkaisee kohdekanavalla")
-async def post_copy(ctx, kanava: discord.Option(discord.SlashCommandOptionType.channel), viesti_viittaus): # "kanava" and "viesti_viittaus" are in Finnish because they're visible in command context help
-    await mybot.post_copy(ctx, kanava, viesti_viittaus)
+@bot.slash_command(name="post-copy", description="Tekee lähdeviestistä kopion, jonka botti julkaisee annetulla kanavalla.")
+@option("kanava", discord.SlashCommandOptionType.channel, description="Kanava, jonne viesti kopioidaan")
+@option("lähdeviesti", str, description="Kopioitava viesti, täysi URL tai kanavan sisäisesti Message ID")
+async def post_copy(ctx, kanava, lähdeviesti): # "kanava" and "lähdeviesti" are in Finnish because they're visible in command context help
+    await mybot.post_copy(ctx, kanava, lähdeviesti)
     pass
 
 bot.run(cfg["token"])

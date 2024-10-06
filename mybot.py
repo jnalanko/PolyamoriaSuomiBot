@@ -358,7 +358,7 @@ class MyBot:
             return
 
         text = message.content
-        await message.channel.send(text)
+        await channel.send(text)
         
     async def midnight_winners_command(self, ctx):
         with self.connection_pool.get_connection() as conn:

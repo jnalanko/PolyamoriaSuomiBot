@@ -14,6 +14,9 @@ class ContainsMidnightPhrase(unittest.TestCase):
     def test_valid_keksiyo(self):
         self.assertTrue(contains_midnight_phrase("Hyvää keksiyötä 🍪"))
 
+    def test_valid_kettuyo(self):
+        self.assertTrue(contains_midnight_phrase("Hyvää kettuyötä 🦊"))
+
     def test_valid_all_caps(self):
         self.assertTrue(contains_midnight_phrase("HYVÄÄ KESKIYÖTÄ"))
 
@@ -35,6 +38,9 @@ class GetPrize(unittest.TestCase):
 
     def test_cookie(self):
         self.assertEqual(get_prize("Hyvää keksiyötä", datetime.date(year=2023, month=1, day=2)), '🍪')
+
+    def test_fox(self):
+        self.assertEqual(get_prize("Hyvää kettuyötä", datetime.date(year=2023, month=1, day=2)), '🦊')
 
     def test_cookie_and_new_year(self):
         self.assertEqual(get_prize("Hyvää keksiyötä", datetime.date(year=2023, month=1, day=1)), '👑')

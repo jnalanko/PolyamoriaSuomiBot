@@ -83,4 +83,12 @@ async def post_copy(ctx, kanava, lähdeviesti): # "kanava" and "lähdeviesti" ar
     await mybot.post_copy(ctx, kanava, lähdeviesti)
     pass
 
+@bot.slash_command(name="post-edit",
+    description="Muokkaa kohdeviestiä kopioimalla sen tilalle lähdeviestin sisältö. Kohdeviestin oltava botin oma.")
+@option("kohdeviesti", str, description="Muokattava viesti, täysi URL tai kanavan sisäisesti Message ID")
+@option("lähdeviesti", str, description="Kopioitava viesti, täysi URL tai kanavan sisäisesti Message ID")
+async def post_edit(ctx, kohdeviesti, lähdeviesti):
+    await mybot.post_edit(ctx, kohdeviesti, lähdeviesti)
+    pass
+
 bot.run(cfg["token"])

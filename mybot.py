@@ -18,6 +18,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
 
+import messages
+
 
 class MessageCountException(Exception):
     def __init__(self, message):
@@ -326,41 +328,35 @@ class MyBot:
             await ctx.send_followup("\n".join(lines[i:i+50]))
 
     # can raise NotFound, Forbidden or HTTPException
-    # message_reference can be either message ID or URL (which ends with the ID)
+    # message_reference can be a message ID within the same channel as command, otherwise needs full URL
     async def post_copy(self, ctx, channel, message_reference):
-        message_id = ""
+        fetch_result = await messages.fetch_message_by_reference(self, ctx, message_reference)
 
-        # parse ID from URI or use it directly if not an URI
-        slash_index = message_reference.rfind('/')
-        if slash_index >= 0:
-            slash_index += 1 # Exclude the slash itself
-            message_id = message_reference[slash_index:]
-        else:
-            message_id = message_reference
-
-        id = -1
-
-        # parse ID into an integer and handle error if thrown
-        try:
-            id = int(message_id)
-        except ValueError:
-            await ctx.send_response(
-                content="Virheellinen viittaus kopioitavaan viestiin {}->{}.".format(message_reference, message_id),
-                ephemeral=True)
+        if fetch_result[0] == None:
+            await ctx.send_response(content=fetch_result[1], ephemeral=True)
             return
 
-        try:
-            message = await ctx.fetch_message(id)
-        except Exception as e:
-            await ctx.send_response(
-                content="Viestin {} hakeminen epäonnistui, virhe: '{}'".format(message_id, str(e)),
-                ephemeral=True)
-            return
-
-        text = message.content
-        await channel.send(text)
+        await channel.send(fetch_result[1].content)
         await ctx.send_response(
-            content="Viestin {} kopioiminen onnistui".format(message_id),
+            content="Viestin {} kopioiminen onnistui".format(fetch_result[1].id),
+            ephemeral=True)
+
+    # can raise NotFound, Forbidden or HTTPException
+    # message_reference can be a message ID within the same channel as command, otherwise needs full URL
+    async def post_edit(self, ctx, target_message_reference, source_message_reference):
+        fetch_target_result = await messages.fetch_message_by_reference(self, ctx, target_message_reference)
+        if fetch_target_result[0] == None:
+            await ctx.send_response(content="Virhe kohdeviestin hakemisessa: '{}'".format(fetch_target_result[1]), ephemeral=True)
+            return
+
+        fetch_source_result = await messages.fetch_message_by_reference(self, ctx, source_message_reference)
+        if fetch_source_result[0] == None:
+            await ctx.send_response(content="Virhe lähdeviestin hakemisessa: '{}'".format(fetch_source_result[1]), ephemeral=True)
+            return
+
+        await fetch_target_result[0].edit(fetch_source_result[0].content)
+        await ctx.send_response(
+            content="Viestin {} päivittäminen onnistui".format(fetch_target_result[0].id),
             ephemeral=True)
         
     async def midnight_winners_command(self, ctx):

@@ -345,7 +345,7 @@ class MyBot:
             id = int(message_id)
         except ValueError:
             await ctx.send_response(
-                content="Virheellinen viittaus kopioitavaan viestiin {message_reference}->{message_id}.",
+                content="Virheellinen viittaus kopioitavaan viestiin {}->{}.".format(message_reference, message_id),
                 ephemeral=True)
             return
 
@@ -353,12 +353,15 @@ class MyBot:
             message = await ctx.fetch_message(id)
         except Exception as e:
             await ctx.send_response(
-                content="Viestin {message_id} hakeminen epäonnistui, virhe: '{e}'",
+                content="Viestin {} hakeminen epäonnistui, virhe: '{}'".format(message_id, str(e)),
                 ephemeral=True)
             return
 
         text = message.content
         await channel.send(text)
+        await ctx.send_response(
+            content="Viestin {} kopioiminen onnistui".format(message_id),
+            ephemeral=True)
         
     async def midnight_winners_command(self, ctx):
         with self.connection_pool.get_connection() as conn:

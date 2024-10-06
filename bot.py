@@ -74,4 +74,9 @@ async def message_count_other(ctx, käyttäjä: discord.Option(discord.SlashComm
     await mybot.message_count_other_command(ctx, käyttäjä)
     pass
 
+@bot.slash_command(name="post-copy", description="Tekee toisen käyttäjän viestistä kopion, jonka julkaisee kohdekanavalla")
+async def post_copy(ctx, kanava: discord.Option(discord.SlashCommandOptionType.channel), viesti_viittaus): # "kanava" and "viesti_viittaus" are in Finnish because they're visible in command context help
+    await mybot.post_copy(ctx, channel, message)
+    pass
+
 bot.run(cfg["token"])

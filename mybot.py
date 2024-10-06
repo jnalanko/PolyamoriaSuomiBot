@@ -324,6 +324,41 @@ class MyBot:
         await ctx.respond("**Threads** ({} total)".format(n_threads))
         for i in range(0, len(lines), 50):
             await ctx.send_followup("\n".join(lines[i:i+50]))
+
+    # can raise NotFound, Forbidden or HTTPException
+    # message_reference can be either message ID or URL (which ends with the ID)
+    async def post_copy(self, ctx, channel, message_reference):
+        message_id = ""
+
+        # parse ID from URI or use it directly if not an URI
+        slash_index = message_reference.rfind('/')
+        if slash_index >= 0:
+            slash_index += 1 # Exclude the slash itself
+            message_id = message_reference[slash_index:]
+        else:
+            message_id = message_reference
+
+        id = -1
+
+        # parse ID into an integer and handle error if thrown
+        try:
+            id = int(message_id)
+        except ValueError:
+            await ctx.send_response(
+                content="Virheellinen viittaus kopioitavaan viestiin {message_reference}->{message_id}.",
+                ephemeral=True)
+            return
+
+        try:
+            message = await ctx.fetch_message(id)
+        except Exception as e:
+            await ctx.send_response(
+                content="Viestin {message_id} hakeminen epäonnistui, virhe: '{e}'",
+                ephemeral=True)
+            return
+
+        text = message.content
+        await message.channel.send(text)
         
     async def midnight_winners_command(self, ctx):
         with self.connection_pool.get_connection() as conn:

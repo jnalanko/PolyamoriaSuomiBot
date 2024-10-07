@@ -18,6 +18,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import konso_dice_roller.konso_dice_roller as konso_dice_roller
 import roll
 
+import messages
+
 
 class MessageCountException(Exception):
     def __init__(self, message):
@@ -324,6 +326,38 @@ class MyBot:
         await ctx.respond("**Threads** ({} total)".format(n_threads))
         for i in range(0, len(lines), 50):
             await ctx.send_followup("\n".join(lines[i:i+50]))
+
+    # can raise NotFound, Forbidden or HTTPException
+    # message_reference can be a message ID within the same channel as command, otherwise needs full URL
+    async def post_copy(self, ctx, channel, message_reference):
+        fetch_result = await messages.fetch_message_by_reference(self, ctx, message_reference)
+
+        if fetch_result[0] == None:
+            await ctx.send_response(content=fetch_result[1], ephemeral=True)
+            return
+
+        new_msg = await channel.send(fetch_result[0].content)
+        await ctx.send_response(
+            content="Viestin {} kopioiminen onnistui, uusi viesti: {}".format(message_reference, new_msg.jump_url),
+            ephemeral=True)
+
+    # can raise NotFound, Forbidden or HTTPException
+    # message_reference can be a message ID within the same channel as command, otherwise needs full URL
+    async def post_edit(self, ctx, target_message_reference, source_message_reference):
+        fetch_target_result = await messages.fetch_message_by_reference(self, ctx, target_message_reference)
+        if fetch_target_result[0] == None:
+            await ctx.send_response(content="Virhe kohdeviestin hakemisessa: '{}'".format(fetch_target_result[1]), ephemeral=True)
+            return
+
+        fetch_source_result = await messages.fetch_message_by_reference(self, ctx, source_message_reference)
+        if fetch_source_result[0] == None:
+            await ctx.send_response(content="Virhe lähdeviestin hakemisessa: '{}'".format(fetch_source_result[1]), ephemeral=True)
+            return
+
+        await fetch_target_result[0].edit(fetch_source_result[0].content)
+        await ctx.send_response(
+            content="Viestin {} päivittäminen onnistui".format(fetch_target_result[0].jump_url),
+            ephemeral=True)
         
     async def midnight_winners_command(self, ctx):
         with self.connection_pool.get_connection() as conn:

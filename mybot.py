@@ -336,9 +336,9 @@ class MyBot:
             await ctx.send_response(content=fetch_result[1], ephemeral=True)
             return
 
-        await channel.send(fetch_result[1].content)
+        await channel.send(fetch_result[0].content)
         await ctx.send_response(
-            content="Viestin {} kopioiminen onnistui".format(fetch_result[1].id),
+            content="Viestin {} kopioiminen onnistui".format(fetch_result[0].id),
             ephemeral=True)
 
     # can raise NotFound, Forbidden or HTTPException

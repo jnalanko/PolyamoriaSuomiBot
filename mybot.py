@@ -336,9 +336,9 @@ class MyBot:
             await ctx.send_response(content=fetch_result[1], ephemeral=True)
             return
 
-        await channel.send(fetch_result[0].content)
+        new_msg = await channel.send(fetch_result[0].content)
         await ctx.send_response(
-            content="Viestin {} kopioiminen onnistui".format(fetch_result[0].id),
+            content="Viestin {} kopioiminen onnistui, uusi viesti: {}".format(message_reference, new_msg.jump_url),
             ephemeral=True)
 
     # can raise NotFound, Forbidden or HTTPException
@@ -356,7 +356,7 @@ class MyBot:
 
         await fetch_target_result[0].edit(fetch_source_result[0].content)
         await ctx.send_response(
-            content="Viestin {} päivittäminen onnistui".format(fetch_target_result[0].id),
+            content="Viestin {} päivittäminen onnistui".format(fetch_target_result[0].jump_url),
             ephemeral=True)
         
     async def midnight_winners_command(self, ctx):

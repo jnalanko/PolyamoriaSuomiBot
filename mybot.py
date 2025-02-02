@@ -378,10 +378,12 @@ class MyBot:
         lines = []
         lines.append("**Midnight Winners**")
         pairs = [(total_wins[user_id], user_id) for user_id in total_wins]
+        entries = []
         for i, (wins, user_id) in enumerate(sorted(pairs)[::-1]): # In descending order
             nick = get_nick(user_id, guild=ctx.guild)
             counts = [(trophy, prizes[user_id][trophy]) for trophy in prizes[user_id].keys()] # Pairs (trophy, count)
-            lines.append("**{}**. **{}**: {}".format(i+1, nick, midnight.format_trophy_counts(counts)))
+            entries.append("**{}**. **{}**: {}".format(i+1, nick, midnight.format_trophy_counts(counts)))
+        lines.append(", ".join(entries))
         await ctx.respond("\n".join(lines))
 
     async def process_message(self, message):

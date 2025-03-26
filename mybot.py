@@ -90,7 +90,7 @@ class AutoDeleteCallBack:
 class MyBot:
 
     # api is of type discord.Client
-    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, lukija_role_id, osallistuja_role_id, db_name, db_user, db_password, admin_user_id, activity_ignore_channel_ids, api):
+    def __init__(self, guild_id, bot_channel_id, midnight_channel_id, join_reports_channel_id, lukija_role_id, osallistuja_role_id, db_name, db_user, db_password, admin_user_id, activity_ignore_channel_ids, api):
         self.guild_id = guild_id
         self.sched = AsyncIOScheduler()
         self.autodelete = AutoDeleteCallBack()
@@ -98,6 +98,7 @@ class MyBot:
         self.bot_channel_id = bot_channel_id
         self.admin_user_id = admin_user_id
         self.midnight_channel_id = midnight_channel_id
+        self.join_reports_channel_id = join_reports_channel_id 
         self.lukija_role_id = lukija_role_id 
         self.osallistuja_role_id = osallistuja_role_id
         self.activity_ignore_channel_ids = activity_ignore_channel_ids
@@ -419,4 +420,7 @@ class MyBot:
 
     async def on_member_join(self, member: discord.Member):
         await member.add_roles(self.api.get_guild(self.guild_id).get_role(self.lukija_role_id))
+
+        joins_channel = self.api.get_channel(self.join_reports_channel_id)
+        await joins_channel.send("Uusi käyttäjä: {}".format(member.mention))
         

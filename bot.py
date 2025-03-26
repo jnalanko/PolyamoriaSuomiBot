@@ -38,7 +38,7 @@ async def on_ready():
     else: this.running = True
 
     print("Client started up.", flush=True)
-    mybot = MyBot(cfg["guild_id"], cfg["bot_channel_id"], cfg["midnight_channel_id"], cfg["lukija_role_id"], cfg["osallistuja_role_id"], cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], cfg["activity_ignore_channel_ids"], bot)
+    mybot = MyBot(cfg["guild_id"], cfg["bot_channel_id"], cfg["midnight_channel_id"], cfg["join_reports_channel_id"], cfg["lukija_role_id"], cfg["osallistuja_role_id"], cfg["db_name"], cfg["db_user"], cfg["db_password"], cfg["admin_user_id"], cfg["activity_ignore_channel_ids"], bot)
 
     mybot.startup()
 
